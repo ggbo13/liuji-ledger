@@ -92,7 +92,7 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
     private fun noOverflow(node:SemanticsNodeInteraction) {
         val layouts=mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
-        assertTrue(layouts.isNotEmpty());layouts.forEach{assertFalse("横向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}",it.didOverflowWidth);assertFalse("纵向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}，超行=${it.multiParagraph.didExceedMaxLines}",it.didOverflowHeight)}
+        assertTrue(layouts.isNotEmpty());layouts.forEach{assertVisibleTextFits(it)}
     }
     private fun capture(name:String) {
         // 只保存人工合成的测试界面，不访问真实账本或用户图片。
@@ -103,7 +103,10 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
                 kotlin.math.abs(pixel.green-expectedBackground.green)<.025f&&
                 kotlin.math.abs(pixel.blue-expectedBackground.blue)<.025f
         }
-        val directory=InstrumentationRegistry.getInstrumentation().targetContext.filesDir.resolve("visual116").apply{mkdirs()}
+        // Gradle 会在卸载测试应用前收集此目录，不能等测试结束后再读取应用私有目录。
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val output=InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+        val directory=(output?.let{java.io.File(it)}?:instrumentation.targetContext.filesDir).resolve("visual116").apply{mkdirs()}
         val file=directory.resolve("${name}_${width}_${fontScale}_${dark}.png")
         val image=compose.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap()
         file.outputStream().use{assertTrue(image.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it))}

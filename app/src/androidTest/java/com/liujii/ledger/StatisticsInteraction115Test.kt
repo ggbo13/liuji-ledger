@@ -200,7 +200,7 @@ class StatisticsInteraction115Test(private val width: Int, private val fontScale
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
                 assertTrue(layouts.isNotEmpty())
-                layouts.forEach { assertFalse("横向：$text，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}",it.didOverflowWidth); assertFalse("纵向：$text，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}，超行=${it.multiParagraph.didExceedMaxLines}",it.didOverflowHeight) }
+                layouts.forEach { assertVisibleTextFits(it) }
             }
     }
 

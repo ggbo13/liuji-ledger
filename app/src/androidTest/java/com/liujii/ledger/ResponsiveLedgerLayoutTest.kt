@@ -105,6 +105,19 @@ class ResponsiveLedgerLayoutTest {
         val layouts=mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
         assertTrue(layouts.isNotEmpty())
-        layouts.forEach{assertFalse("横向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}",it.didOverflowWidth);assertFalse("纵向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}，超行=${it.multiParagraph.didExceedMaxLines}",it.didOverflowHeight)}
+        layouts.forEach{assertVisibleTextFits(it)}
+    }
+
+    @Test fun visibleTextAssertionStillRejectsRealWidthAndHeightClipping() {
+        var actual:TextLayoutResult?=null
+        compose.setContent {MaterialTheme{Text("完整文字与123.45",onTextLayout={actual=it})}}
+        compose.runOnIdle {
+            val layout=checkNotNull(actual)
+            assertVisibleTextFits(layout)
+            val narrow=layout.copy(size=androidx.compose.ui.unit.IntSize(1,layout.size.height))
+            val short=layout.copy(size=androidx.compose.ui.unit.IntSize(layout.size.width,1))
+            assertTrue("真实宽度不足必须失败",runCatching{assertVisibleTextFits(narrow)}.exceptionOrNull() is AssertionError)
+            assertTrue("真实高度不足必须失败",runCatching{assertVisibleTextFits(short)}.exceptionOrNull() is AssertionError)
+        }
     }
 }

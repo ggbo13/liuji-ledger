@@ -84,7 +84,7 @@ class CategoryChoices115ComposeTest(private val width: Int, private val fontScal
                 assertEquals(category.name, layout.layoutInput.text.text)
                 assertEquals(1, layout.lineCount)
                 assertEquals(TextAlign.Center, layout.layoutInput.style.textAlign)
-                assertFalse("分类=${category.name}，size=${layout.size}，段落=${layout.multiParagraph.width}×${layout.multiParagraph.height}，超行=${layout.multiParagraph.didExceedMaxLines}",layout.didOverflowHeight)
+                assertVisibleTextFits(layout,allowEllipsis=category.name==longName)
                 if (category.name == longName) assertTrue(layout.isLineEllipsized(0))
             }
             rect

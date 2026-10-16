@@ -116,10 +116,12 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         // 直接请求焦点，不先替组件滚动；输入走 Compose 编辑语义，不宣称是真实键盘敲击。
         field.performSemanticsAction(SemanticsActions.RequestFocus) { assertTrue(it()) }
         field.assertIsFocused()
+        waitForFieldInsideViewport()
         assertFieldInsideViewport()
         field.performTextInput("周末杂货与车费")
         field.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("周末杂货与车费")))
         field.assertIsFocused()
+        waitForFieldInsideViewport()
         assertFieldInsideViewport()
         compose.runOnIdle { assertTrue("聚焦屏外备注应带动父表单滚动", formScroll.value > 0) }
     }
@@ -153,6 +155,17 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         assertTrue("输入后真实软件键盘仍应显示", realImeBottom() > 0)
         waitForFieldAboveRealIme()
         assertFieldInsideViewport()
+    }
+
+    private fun waitForFieldInsideViewport() {
+        // 系统 IME 动画不受 Compose 空闲状态控制，按真实边界等待，不替组件手动滚动。
+        compose.waitUntil(timeoutMillis=5000L) {
+            compose.runOnUiThread {
+                fieldWindowBounds.height>0f&&viewportWindowBounds.height>0f&&
+                    fieldWindowBounds.left>=viewportWindowBounds.left-1f&&fieldWindowBounds.right<=viewportWindowBounds.right+1f&&
+                    fieldWindowBounds.top>=viewportWindowBounds.top-1f&&fieldWindowBounds.bottom<=viewportWindowBounds.bottom+1f
+            }
+        }
     }
 
     private fun assertFieldInsideViewport() {
