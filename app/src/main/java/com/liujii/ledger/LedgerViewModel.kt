@@ -21,6 +21,13 @@ import java.time.temporal.TemporalAdjusters
 
 class LedgerViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = (application as LiuJiApplication).repository
+    private val fullBackup = FullBackupManager(application, repo)
+    val preparedBackup = androidx.compose.runtime.mutableStateOf<PreparedBackup?>(null)
+    val backupStatus = androidx.compose.runtime.mutableStateOf(fullBackup.status())
+    fun refreshBackupStatus(hasTransactions: Boolean = transactions.value.isNotEmpty()) { backupStatus.value = fullBackup.status(hasTransactions) }
+    fun setBackupReminder(enabled: Boolean) { fullBackup.setReminderEnabled(enabled); refreshBackupStatus() }
+    fun latestRecoveryBackup(): Uri? = fullBackup.latestRecovery()?.let { Uri.fromFile(it) }
+    fun dismissBackupPreview() { if (!fileOperationInProgress.value) preparedBackup.value = null }
     val categories = repo.categories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val accounts = repo.accounts.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val paymentMethods = repo.paymentMethods.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -232,22 +239,47 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun exportJson(output: OutputStream, done: (String?) -> Unit) = viewModelScope.launch { runCatching { withContext(Dispatchers.IO){ repo.exportJson(output) } }.fold({done(null)}, {done(it.message)}) }
     fun importJson(uri:Uri,done:(String?)->Unit)=restoreBackup(uri){done(it.message)}
-    fun restoreBackup(uri: Uri, done: (BackupRestoreOutcome) -> Unit) = viewModelScope.launch {
+    fun prepareBackup(uri: Uri, done: (String?) -> Unit) {
+        if(fileOperationInProgress.value){done("另一个文件操作正在进行，请稍候");return}
+        fileOperationInProgress.value=true
+        preparedBackup.value=null
+        viewModelScope.launch {
+            var failure:String?=null
+            try { preparedBackup.value=withContext(Dispatchers.IO){fullBackup.prepare(uri)} }
+            catch(cancelled:CancellationException){throw cancelled}
+            catch(error:Exception){failure="无法预览备份，当前数据未改变：${error.message?:"请检查文件"}"}
+            finally {fileOperationInProgress.value=false;endExternalActivity()}
+            done(failure)
+        }
+    }
+
+    fun restoreBackup(uri: Uri, done: (BackupRestoreOutcome) -> Unit) {
+        prepareBackup(uri){error->if(error!=null)done(BackupRestoreOutcome(false,error))else restorePreparedBackup(done)}
+    }
+
+    fun restorePreparedBackup(done: (BackupRestoreOutcome) -> Unit) = viewModelScope.launch {
         if(fileOperationInProgress.value){done(BackupRestoreOutcome(false,"另一个文件操作正在进行，请稍候"));return@launch}
+        val prepared=preparedBackup.value?:run{done(BackupRestoreOutcome(false,"请重新选择备份并查看预览"));return@launch}
+        if(pendingOperations.value.isNotEmpty()||submissions.values.any{it.processing}||postingRuleIds.value.isNotEmpty()){
+            done(BackupRestoreOutcome(false,"请等待当前保存操作完成后再恢复"));return@launch
+        }
         fileOperationInProgress.value=true
         restoringBackup=true
         var restored=false
         try {
             val oldRules=repo.allRecurringRules()
-            withContext(Dispatchers.IO){repo.importJson(uri)}
-            restored=true
+            val result=withContext(Dispatchers.IO){fullBackup.restore(prepared)}
+            restored=result.restored
+            appearance.value=repo.loadAppearance()
+            preparedBackup.value=null
             var remindersRestored=true
             oldRules.forEach{if(!ReminderScheduler.cancel(getApplication(),it.id))remindersRestored=false}
             repo.allRecurringRules().filter{it.isEffective()}.forEach{if(!ReminderScheduler.schedule(getApplication(),it))remindersRestored=false}
-            done(BackupRestoreOutcome(true,if(remindersRestored)null else "备份恢复成功，但部分提醒未能恢复。请检查通知和后台运行设置，数据已保留。"))
+            val messages=listOfNotNull(result.message,if(remindersRestored)null else "账目已恢复，但部分提醒未能恢复。请检查通知和后台运行设置。")
+            done(result.copy(message=messages.joinToString("\n").takeIf{it.isNotBlank()},remindersRestored=remindersRestored))
         } catch(cancelled:CancellationException){throw cancelled}
         catch(error:Exception){done(BackupRestoreOutcome(restored,if(restored)"备份恢复成功，但提醒恢复失败：${error.message?:"请检查系统设置"}" else "备份恢复失败，当前数据未改变：${error.message?:"请检查文件"}"))}
-        finally{restoringBackup=false;fileOperationInProgress.value=false;endExternalActivity()}
+        finally{restoringBackup=false;fileOperationInProgress.value=false;refreshBackupStatus();endExternalActivity()}
     }
     fun exportCsv(output: OutputStream, rows: List<TransactionRow>, done: (String?) -> Unit) = viewModelScope.launch { runCatching { withContext(Dispatchers.IO){repo.exportCsv(rows, transfers.value, adjustments.value, output)} }.fold({done(null)}, {done(it.message)}) }
 
@@ -292,6 +324,23 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
             catch(cancelled:CancellationException){throw cancelled}
             catch(error:Exception){done(error.message?:"备份导出失败，请换一个保存位置")}
             finally{fileOperationInProgress.value=false;endExternalActivity()}
+        }
+    }
+
+    fun exportFullBackupToUri(uri:Uri,withoutImage:Boolean=false,done:(String?,Boolean)->Unit) {
+        if(fileOperationInProgress.value){done("另一个文件操作正在进行，请稍候",false);endExternalActivity();return}
+        fileOperationInProgress.value=true
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO){
+                    val output=getApplication<Application>().contentResolver.openOutputStream(uri,"wt")?:error("无法打开所选文件")
+                    output.use{fullBackup.export(it,withoutImage)}
+                    fullBackup.markExportSuccessful()
+                }
+                done(null,false)
+            }catch(cancelled:CancellationException){throw cancelled}
+            catch(error:Exception){done(error.message?:"备份导出失败，请换一个保存位置",error is BackgroundUnavailableException)}
+            finally{fileOperationInProgress.value=false;refreshBackupStatus();endExternalActivity()}
         }
     }
 

@@ -200,7 +200,7 @@ class StatisticsInteraction115Test(private val width: Int, private val fontScale
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
                 assertTrue(layouts.isNotEmpty())
-                layouts.forEach { assertFalse(it.didOverflowWidth); assertFalse(it.didOverflowHeight) }
+                layouts.forEach { assertVisibleTextFits(it) }
             }
     }
 

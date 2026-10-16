@@ -65,14 +65,14 @@ class ResponsiveLedgerLayoutTest {
             assertTrue(bounds.left>=grid.left-1f&&bounds.right<=grid.right+1f)
             assertNoTextOverflow(node)
         }
-        compose.onNode(hasContentDescription("4日，收入",substring=true)).performScrollTo().performClick()
+        compose.onNode(hasText("4") and hasContentDescription("4日，收入",substring=true)).performScrollTo().performClick()
         compose.runOnIdle{assertEquals(month.atDay(4),clicked)}
     }
 
-    @Test fun detailBarSpansViewportAndAmountHasTwentyDpInset() {
+    @Test fun detailBarSpansViewportAndAmountHasSixteenDpInset() {
         var insetPx=0f
         compose.setContent {MaterialTheme {
-            insetPx=with(LocalDensity.current){20.dp.toPx()}
+            insetPx=with(LocalDensity.current){16.dp.toPx()}
             Box(Modifier.width(320.dp).testTag("明细可用宽度")) {
                 SwipeRevealTransaction(row,false,{},{},{})
             }
@@ -105,6 +105,19 @@ class ResponsiveLedgerLayoutTest {
         val layouts=mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
         assertTrue(layouts.isNotEmpty())
-        layouts.forEach{assertFalse(it.didOverflowWidth);assertFalse(it.didOverflowHeight)}
+        layouts.forEach{assertVisibleTextFits(it)}
+    }
+
+    @Test fun visibleTextAssertionStillRejectsRealWidthAndHeightClipping() {
+        var actual:TextLayoutResult?=null
+        compose.setContent {MaterialTheme{Text("完整文字与123.45",onTextLayout={actual=it})}}
+        compose.runOnIdle {
+            val layout=checkNotNull(actual)
+            assertVisibleTextFits(layout)
+            val narrow=layout.copy(size=androidx.compose.ui.unit.IntSize(1,layout.size.height))
+            val short=layout.copy(size=androidx.compose.ui.unit.IntSize(layout.size.width,1))
+            assertTrue("真实宽度不足必须失败",runCatching{assertVisibleTextFits(narrow)}.exceptionOrNull() is AssertionError)
+            assertTrue("真实高度不足必须失败",runCatching{assertVisibleTextFits(short)}.exceptionOrNull() is AssertionError)
+        }
     }
 }

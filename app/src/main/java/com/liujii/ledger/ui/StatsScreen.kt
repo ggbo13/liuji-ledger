@@ -116,7 +116,7 @@ fun StatsScreen(vm: LedgerViewModel) {
         Spacer(Modifier.height(20.dp))
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){
             GlassCard(Modifier.weight(1f)){Text("日均支出",color=MaterialTheme.colorScheme.onSurfaceVariant);Text(money(expense/days.coerceAtLeast(1)),fontWeight=FontWeight.Bold)}
-            GlassCard(Modifier.weight(1f)){Text("收支结余",color=MaterialTheme.colorScheme.onSurfaceVariant);Text(money(income-expense),fontWeight=FontWeight.Bold,color=if(income>=expense)Mint else Coral)}
+            GlassCard(Modifier.weight(1f)){Text("收支结余",color=MaterialTheme.colorScheme.onSurfaceVariant);Text(money(income-expense),fontWeight=FontWeight.Bold,color=if(income>=expense)MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary)}
         }
         Spacer(Modifier.height(22.dp));SectionHeader("支出分类")
         GlassCard(Modifier.fillMaxWidth()) {

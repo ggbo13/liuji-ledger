@@ -1,6 +1,8 @@
 package com.liujii.ledger.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 
@@ -12,10 +14,10 @@ fun UnsavedChangesDialog(show: Boolean, canSave: Boolean, onSave: () -> Unit, on
         onDismissRequest=onContinue,
         title={Text("修改尚未保存")},
         text={Text("保存修改后退出，或放弃这次修改。")},
-        confirmButton={TextButton(onClick=onSave,enabled=canSave){Text("保存")}},
-        dismissButton={Column{
-            TextButton(onClick=onDiscard){Text("放弃修改",color=MaterialTheme.colorScheme.error)}
-            TextButton(onClick=onContinue){Text("继续编辑")}
+        confirmButton={Column(Modifier.fillMaxWidth()){
+            DialogAction("保存",onClick=onSave,enabled=canSave,modifier=Modifier.fillMaxWidth())
+            DialogAction("放弃修改",onClick=onDiscard,modifier=Modifier.fillMaxWidth(),destructive=true)
+            DialogAction("继续编辑",onClick=onContinue,modifier=Modifier.fillMaxWidth())
         }},
     )
 }

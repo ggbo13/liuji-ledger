@@ -51,6 +51,7 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
     var editingRow by remember { mutableStateOf<TransactionRow?>(null) }
     var postingMessage by remember { mutableStateOf<String?>(null) }
     val today = rememberCurrentDate()
+    LaunchedEffect(all.isNotEmpty(),today){vm.refreshBackupStatus(all.isNotEmpty())}
     val zone = ZoneId.systemDefault()
     val yearMonth = YearMonth.from(today)
     val range = remember(yearMonth, zone) { monthRange(today) }
@@ -109,7 +110,7 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
             GlassCard(Modifier.fillMaxWidth()) {
                 upcoming.forEachIndexed { index, rule ->
                     Row(Modifier.fillMaxWidth().padding(vertical=8.dp), verticalAlignment=Alignment.CenterVertically) {
-                        Box(Modifier.size(40.dp).background((if(rule.type==MoneyType.INCOME) Mint else Coral).copy(alpha=.12f), CircleShape), contentAlignment=Alignment.Center) { Text(if(rule.type==MoneyType.INCOME) "入" else "支", color=if(rule.type==MoneyType.INCOME) Mint else Coral) }
+                        Box(Modifier.size(40.dp).background((if(rule.type==MoneyType.INCOME) Mint else Coral).copy(alpha=.12f), CircleShape), contentAlignment=Alignment.Center) { Text(if(rule.type==MoneyType.INCOME) "入" else "支", color=if(rule.type==MoneyType.INCOME) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary) }
                         Column(Modifier.padding(start=12.dp).weight(1f)) { Text(rule.title, fontWeight=FontWeight.Medium); Text(dateText(rule.nextAt), style=MaterialTheme.typography.bodySmall, color=MaterialTheme.colorScheme.onSurfaceVariant) }
                         val posting=rule.id in vm.postingRuleIds.value
                         TextButton(onClick={vm.postRecurring(rule,onError={postingMessage=it}){inserted->if(!inserted)postingMessage="这期账单已经入账，请刷新后查看。"}},enabled=!posting) { Icon(Icons.Default.Check, null); Text(if(posting)"处理中"else"入账") }
@@ -162,8 +163,8 @@ private fun CashTrail(values: List<Long>) {
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
-        Text("● 收入较多", color=mint, style=MaterialTheme.typography.labelSmall)
-        Text("● 支出较多", color=coral, style=MaterialTheme.typography.labelSmall)
+        Text("● 收入较多", color=MaterialTheme.colorScheme.secondary, style=MaterialTheme.typography.labelSmall)
+        Text("● 支出较多", color=MaterialTheme.colorScheme.tertiary, style=MaterialTheme.typography.labelSmall)
         Text("— 收支平衡线", color=trendColor, style=MaterialTheme.typography.labelSmall)
     }
 }
@@ -175,10 +176,10 @@ fun TransactionCompact(t: com.liujii.ledger.data.TransactionRow, trailing: (@Com
     val amountStyle=MaterialTheme.typography.titleMedium.copy(fontFamily=FontFamily.Monospace,fontWeight=FontWeight.Bold)
     val textMeasurer=rememberTextMeasurer()
     val amountWidth=remember(amount,amountStyle,density){textMeasurer.measure(amount,amountStyle,maxLines=1,softWrap=false).size.width}
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val stacked=with(density){amountWidth.toDp()}>maxWidth*.46f
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(end=16.dp)) {
+    val stacked=density.fontScale>=1.5f||with(density){amountWidth.toDp()}>maxWidth*.46f
     val amountContent:@Composable ()->Unit={
-        Text(amount,color=if(t.type==MoneyType.INCOME)MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,style=amountStyle,maxLines=1,softWrap=false,autoSize=TextAutoSize.StepBased(minFontSize=with(density){10.dp.toSp()},maxFontSize=amountStyle.fontSize,stepSize=.25.sp))
+        Text(amount,color=if(t.type==MoneyType.INCOME)MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,style=amountStyle,softWrap=true,overflow=TextOverflow.Visible,textAlign=androidx.compose.ui.text.style.TextAlign.End)
     }
     Row(Modifier.fillMaxWidth().padding(vertical=9.dp), verticalAlignment=Alignment.CenterVertically) {
         Box(Modifier.width(5.dp).height(36.dp).background(Color(t.categoryColor),CircleShape))
@@ -196,7 +197,7 @@ fun TransactionCompact(t: com.liujii.ledger.data.TransactionRow, trailing: (@Com
 
 @Composable
 fun TransferCompact(t: TransferRow, trailing: (@Composable () -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(vertical=9.dp),verticalAlignment=Alignment.CenterVertically){
+    Row(Modifier.fillMaxWidth().padding(end=16.dp).padding(vertical=9.dp),verticalAlignment=Alignment.CenterVertically){
         Box(Modifier.size(42.dp).background(MaterialTheme.colorScheme.primary.copy(alpha=.13f),CircleShape),contentAlignment=Alignment.Center){Icon(Icons.AutoMirrored.Filled.ArrowForward,null,tint=MaterialTheme.colorScheme.primary)}
         Column(Modifier.padding(start=12.dp).weight(1f)){Text(t.note.ifBlank{"账户转账"},maxLines=1);Text("${t.fromAccountName} → ${t.toAccountName} · ${dateText(t.occurredAt)}",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
         Text(money(t.amountCents),fontWeight=FontWeight.Bold)
