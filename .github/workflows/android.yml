@@ -27,6 +27,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: 显式安装 Android SDK 工具
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
@@ -76,6 +80,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: 显式安装 Android SDK 工具
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          log-accepted-android-sdk-licenses: false
+      - name: 安装固定的编译平台
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
         with:
           cache-read-only: true
