@@ -59,8 +59,8 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
         amount.assertIsDisplayed()
         val root=compose.onNodeWithTag("流水视口").fetchSemanticsNode().boundsInRoot
         assertTrue(amount.fetchSemanticsNode().boundsInRoot.right<=root.right-inset+1)
-        noOverflow(amount)
         capture("transaction")
+        noOverflow(amount)
     }
     @Test fun dialogActionsStayCenteredAndTouchTargetsAreLargeEnough() {
         var clicked=false
@@ -74,8 +74,8 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
         assertTrue(button.height>=minimum-1)
         assertEquals(button.center.x,bounds.center.x,2f)
         assertEquals(button.center.y,bounds.center.y,2f)
-        noOverflow(label)
         capture("actions")
+        noOverflow(label)
         compose.onNodeWithTag("操作按钮").performClick();compose.runOnIdle{assertTrue(clicked)}
     }
     @Test fun restorePreviewShowsCountRangeAndRequiresConfirmation() {
@@ -92,7 +92,7 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
     private fun noOverflow(node:SemanticsNodeInteraction) {
         val layouts=mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
-        assertTrue(layouts.isNotEmpty());layouts.forEach{assertFalse(it.didOverflowWidth);assertFalse(it.didOverflowHeight)}
+        assertTrue(layouts.isNotEmpty());layouts.forEach{assertFalse("横向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}",it.didOverflowWidth);assertFalse("纵向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}，超行=${it.multiParagraph.didExceedMaxLines}",it.didOverflowHeight)}
     }
     private fun capture(name:String) {
         // 只保存人工合成的测试界面，不访问真实账本或用户图片。

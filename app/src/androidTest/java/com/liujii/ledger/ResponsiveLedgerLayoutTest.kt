@@ -65,7 +65,7 @@ class ResponsiveLedgerLayoutTest {
             assertTrue(bounds.left>=grid.left-1f&&bounds.right<=grid.right+1f)
             assertNoTextOverflow(node)
         }
-        compose.onNode(hasContentDescription("4日，收入",substring=true)).performScrollTo().performClick()
+        compose.onNode(hasText("4") and hasContentDescription("4日，收入",substring=true)).performScrollTo().performClick()
         compose.runOnIdle{assertEquals(month.atDay(4),clicked)}
     }
 
@@ -105,6 +105,6 @@ class ResponsiveLedgerLayoutTest {
         val layouts=mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
         assertTrue(layouts.isNotEmpty())
-        layouts.forEach{assertFalse(it.didOverflowWidth);assertFalse(it.didOverflowHeight)}
+        layouts.forEach{assertFalse("横向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}",it.didOverflowWidth);assertFalse("纵向：${it.layoutInput.text}，size=${it.size}，段落=${it.multiParagraph.width}×${it.multiParagraph.height}，超行=${it.multiParagraph.didExceedMaxLines}",it.didOverflowHeight)}
     }
 }
