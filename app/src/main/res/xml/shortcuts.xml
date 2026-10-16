@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="expense" android:enabled="true" android:icon="@drawable/ic_shortcut_expense" android:shortcutShortLabel="@string/shortcut_expense" android:shortcutLongLabel="@string/shortcut_expense_long">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.liujii.ledger" android:targetClass="com.liujii.ledger.MainActivity">
+            <extra android:name="shortcut_action" android:value="expense" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="income" android:enabled="true" android:icon="@drawable/ic_shortcut_income" android:shortcutShortLabel="@string/shortcut_income" android:shortcutLongLabel="@string/shortcut_income_long">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.liujii.ledger" android:targetClass="com.liujii.ledger.MainActivity">
+            <extra android:name="shortcut_action" android:value="income" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="details" android:enabled="true" android:icon="@drawable/ic_shortcut_transfer" android:shortcutShortLabel="@string/shortcut_details" android:shortcutLongLabel="@string/shortcut_details_long">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.liujii.ledger" android:targetClass="com.liujii.ledger.MainActivity">
+            <extra android:name="shortcut_action" android:value="details" />
+        </intent>
+    </shortcut>
+</shortcuts>

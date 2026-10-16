@@ -1,0 +1,5 @@
+# 通用脚本保留 Unix 换行，Windows 批处理使用 Windows 换行。
+* text=auto eol=lf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.jar binary

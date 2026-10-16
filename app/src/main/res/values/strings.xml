@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">流迹</string>
+    <string name="shortcut_expense">支出</string>
+    <string name="shortcut_expense_long">支出</string>
+    <string name="shortcut_income">收入</string>
+    <string name="shortcut_income_long">收入</string>
+    <string name="shortcut_details">明细</string>
+    <string name="shortcut_details_long">明细</string>
+</resources>
