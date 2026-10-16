@@ -37,7 +37,7 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private data class BackgroundImage(val bitmap:android.graphics.Bitmap?,val failed:Boolean=false,val minimumOverlay:Float=.45f)
+private data class BackgroundImage(val bitmap:android.graphics.Bitmap?,val failed:Boolean=false)
 private val backgroundCache by lazy { object:android.util.LruCache<String,BackgroundImage>(16*1024*1024){override fun sizeOf(key:String,value:BackgroundImage)=value.bitmap?.allocationByteCount?:1} }
 
 @Composable
@@ -52,9 +52,7 @@ fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
             val key="$uri-${targetWidth.toInt()}-${targetHeight.toInt()}"
             value=backgroundCache.get(key)?:withContext(Dispatchers.IO){
                 val bitmap=loadSampledBackground(context,Uri.parse(uri),targetWidth.toInt(),targetHeight.toInt())
-                var low=255;var high=0
-                if(bitmap!=null)for(x in 1..6)for(y in 1..6){val pixel=bitmap.getPixel(bitmap.width*x/7,bitmap.height*y/7);val luma=(android.graphics.Color.red(pixel)*.21+android.graphics.Color.green(pixel)*.72+android.graphics.Color.blue(pixel)*.07).toInt();low=minOf(low,luma);high=maxOf(high,luma)}
-                BackgroundImage(bitmap,bitmap==null,if(high-low>100).65f else .45f).also{if(bitmap!=null)backgroundCache.put(key,it)}
+                BackgroundImage(bitmap,bitmap==null).also{if(bitmap!=null)backgroundCache.put(key,it)}
             }
         } else value=BackgroundImage(null)
     }
@@ -67,7 +65,7 @@ fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
         } else {
             Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(settings.colorStart), Color(settings.colorEnd)))))
         }
-        val alpha=if(settings.backgroundType=="image")maxOf(settings.overlayAlpha,backgroundImage.minimumOverlay)else settings.overlayAlpha
+        val alpha=com.liujii.ledger.data.backgroundOverlayAlpha(settings.overlayAlpha)
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background.copy(alpha=alpha)))
         // 自定义背景不是 Material Surface，需要显式向整个页面提供主题前景色。
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
@@ -211,6 +209,14 @@ fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = 
     Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
         Text(title, style=MaterialTheme.typography.titleMedium, fontWeight=FontWeight.SemiBold, modifier=Modifier.weight(1f))
         if(action != null) TextButton(onClick=onAction) { Text(action) }
+    }
+}
+
+@Composable
+fun DialogAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, destructive: Boolean = false) {
+    TextButton(onClick=onClick,enabled=enabled,modifier=modifier.heightIn(min=48.dp).widthIn(min=64.dp)) {
+        Text(label,softWrap=true,textAlign=androidx.compose.ui.text.style.TextAlign.Center,
+            color=if(destructive&&enabled)MaterialTheme.colorScheme.error else androidx.compose.ui.graphics.Color.Unspecified)
     }
 }
 

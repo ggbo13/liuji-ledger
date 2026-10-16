@@ -49,7 +49,6 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
     var editingBudget by remember { mutableStateOf<BudgetEntity?>(null) }
     var deletingBudget by remember { mutableStateOf<BudgetEntity?>(null) }
     var actionError by remember{mutableStateOf<String?>(null)}
-    var importError by remember{mutableStateOf<String?>(null)}
     val today=rememberCurrentDate()
     val fileBusy=vm.fileOperationInProgress.value
     var section by rememberSaveable { mutableStateOf<String?>(null) }
@@ -57,9 +56,6 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
     LaunchedEffect(focusBudget){if(focusBudget){section="预算与周期账单";onBudgetFocused()}}
     val requestNotifications=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->vm.endExternalActivity();if(!granted)message="未开启通知权限，仍可在首页查看到期账单。"}
     var explainNotifications by remember { mutableStateOf(false) }
-    var pendingImport by remember { mutableStateOf<android.net.Uri?>(null) }
-    val createBackup=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")){uri->try{uri?.let{vm.exportJsonToUri(it){failure->message=failure?:"备份已导出"}}}finally{vm.endExternalActivity()}}
-    val importBackup=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->try{importError=null;pendingImport=uri}finally{vm.endExternalActivity()}}
     val createCsv=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")){uri->try{uri?.let{vm.exportFilteredCsvToUri(it,CsvTransactionFilter()){failure,count->message=failure?:"CSV 已导出，共 $count 笔收支"}}}finally{vm.endExternalActivity()}}
     val pickImage=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->try{uri?.let{vm.selectBackgroundImage(it){failure->message=failure}}}finally{vm.endExternalActivity()}}
     fun launchExternal(action:()->Unit){
@@ -86,7 +82,7 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
         SectionHeader("外观");GlassCard(Modifier.fillMaxWidth()){
             Text("显示模式");ThemeChoices(vm)
             Text("背景",modifier=Modifier.padding(top=8.dp));Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedButton({vm.updateAppearance{it.copy(backgroundType="gradient",colorStart=0xFFEAF1F7,colorEnd=0xFFD9F1EB)}},enabled=!fileBusy,contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp)){Text("清透渐变",maxLines=1,softWrap=false)};OutlinedButton({launchExternal{pickImage.launch(arrayOf("image/*"))}},enabled=!fileBusy,contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp)){Icon(Icons.Default.Image,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("本地图片",maxLines=1,softWrap=false)}}
-            Text("背景遮罩 ${(vm.appearance.value.overlayAlpha*100).toInt()}%",color=MaterialTheme.colorScheme.onSurfaceVariant);Slider(vm.appearance.value.overlayAlpha,{a->vm.updateAppearance{it.copy(overlayAlpha=a)}},valueRange=.45f..1f)
+            Text("背景遮罩 ${kotlin.math.round(vm.appearance.value.overlayAlpha*100).toInt()}%",color=MaterialTheme.colorScheme.onSurfaceVariant);Slider(vm.appearance.value.overlayAlpha,{a->vm.updateAppearance{it.copy(overlayAlpha=a)}},valueRange=.45f..1f,enabled=!fileBusy)
         }
         }
         if(section=="账本与收支方式") {
@@ -125,11 +121,9 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
         if(section=="隐私与数据") {
         Spacer(Modifier.height(20.dp));SectionHeader("隐私与数据");GlassCard(Modifier.fillMaxWidth()){
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("应用锁");Text("使用指纹、人脸或系统凭据",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)};Switch(vm.appearance.value.appLockEnabled,{v->if(v&&!context.getSystemService(android.app.KeyguardManager::class.java).isDeviceSecure)message="请先在手机设置中配置系统锁屏或生物识别。" else vm.updateAppearance{it.copy(appLockEnabled=v)}})}
-            HorizontalDivider(Modifier.padding(vertical=10.dp));SettingAction(Icons.Default.Backup,"导出完整备份",enabled=!fileBusy){launchExternal{createBackup.launch("流迹备份-$today.json")}};SettingAction(Icons.Default.Restore,"恢复完整备份",enabled=!fileBusy){launchExternal{importBackup.launch(arrayOf("application/json","text/plain"))}};SettingAction(Icons.Default.TableView,"导出全部收支 CSV",enabled=!fileBusy){launchExternal{createCsv.launch("流迹账目-$today.csv")}}
+            HorizontalDivider(Modifier.padding(vertical=10.dp));FullBackupSettings(vm);HorizontalDivider(Modifier.padding(vertical=10.dp));SettingAction(Icons.Default.TableView,"导出全部收支 CSV",enabled=!fileBusy){launchExternal{createCsv.launch("流迹账目-$today.csv")}}
             if(fileBusy)Text("正在处理文件，请稍候…",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        val autoBackup=context.filesDir.resolve("恢复前自动备份.json")
-        if(autoBackup.exists())TextButton(onClick={importError=null;pendingImport=android.net.Uri.fromFile(autoBackup)},enabled=!fileBusy){Text("恢复上次导入前的自动备份")}
         }
         Spacer(Modifier.height(18.dp));Text("流迹 ${BuildConfig.VERSION_NAME} · 数据仅保存在本机",color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.bodySmall)
     }
@@ -138,7 +132,6 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
     editingBudget?.let { BudgetDialog(vm,categories,it){editingBudget=null} }
     deletingBudget?.let { b -> val processing=vm.isProcessing("budget-delete-${b.id}");AlertDialog(onDismissRequest={if(!processing)deletingBudget=null},title={Text("删除预算？")},text={Column{Text("仅删除这项预算，已记录的收支不会改变。");actionError?.let{Text(it,color=MaterialTheme.colorScheme.error)}}},confirmButton={TextButton({vm.deleteBudget(b.id){failure->actionError=failure;if(failure==null)deletingBudget=null}},enabled=!processing){Text(if(processing)"处理中…"else"删除")}},dismissButton={TextButton({deletingBudget=null},enabled=!processing){Text("取消")}}) }
     deletingRecurring?.let { rule -> val processing=vm.isProcessing("recurring-${rule.id}");AlertDialog(onDismissRequest={if(!processing)deletingRecurring=null},title={Text("删除周期账单？")},text={Column{Text("将删除“${rule.title}”的后续提醒，已入账的历史不受影响。");actionError?.let{Text(it,color=MaterialTheme.colorScheme.error)}}},confirmButton={TextButton({vm.deleteRecurring(rule){failure->actionError=failure;if(failure==null)deletingRecurring=null}},enabled=!processing){Text(if(processing)"处理中…"else"删除",color=Coral)}},dismissButton={TextButton({deletingRecurring=null},enabled=!processing){Text("取消")}}) }
-    pendingImport?.let { uri -> AlertDialog(onDismissRequest={if(!fileBusy)pendingImport=null},title={Text("恢复备份？")},text={Column{Text("将用选定备份替换当前账目。恢复前会自动保留当前数据，失败时当前数据不变。");importError?.let{Text(it,color=MaterialTheme.colorScheme.error)}}},confirmButton={TextButton(onClick={importError=null;vm.restoreBackup(uri){outcome->if(outcome.restored){pendingImport=null;message=outcome.message?:"备份恢复成功"}else importError=outcome.message}},enabled=!fileBusy){Text(if(fileBusy)"恢复中…"else"确认恢复")}},dismissButton={TextButton(onClick={pendingImport=null},enabled=!fileBusy){Text("取消")}}) }
     if(explainNotifications)AlertDialog(onDismissRequest={explainNotifications=false},title={Text("开启账单提醒")},text={Text("通知用于提醒周期账单到期。不开启也可以在首页查看账单。")},confirmButton={TextButton(onClick={explainNotifications=false;if(Build.VERSION.SDK_INT>=33)launchExternal{requestNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)}}){Text("开启通知")}},dismissButton={TextButton(onClick={explainNotifications=false}){Text("暂不开启")}})
 }
 

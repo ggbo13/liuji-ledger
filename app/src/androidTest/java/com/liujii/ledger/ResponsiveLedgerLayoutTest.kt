@@ -69,10 +69,10 @@ class ResponsiveLedgerLayoutTest {
         compose.runOnIdle{assertEquals(month.atDay(4),clicked)}
     }
 
-    @Test fun detailBarSpansViewportAndAmountHasTwentyDpInset() {
+    @Test fun detailBarSpansViewportAndAmountHasSixteenDpInset() {
         var insetPx=0f
         compose.setContent {MaterialTheme {
-            insetPx=with(LocalDensity.current){20.dp.toPx()}
+            insetPx=with(LocalDensity.current){16.dp.toPx()}
             Box(Modifier.width(320.dp).testTag("明细可用宽度")) {
                 SwipeRevealTransaction(row,false,{},{},{})
             }

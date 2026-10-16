@@ -94,7 +94,7 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
         writeBackup(dao.snapshot(),output)
     }
 
-    private fun writeBackup(snapshot:BackupPayload,output:OutputStream) {
+    internal fun writeBackup(snapshot:BackupPayload,output:OutputStream) {
         val root = JSONObject().put("version", 3)
         root.put("accounts", JSONArray().apply { snapshot.accounts.forEach { put(JSONObject().put("id",it.id).put("name",it.name).put("opening",it.openingBalanceCents).put("active",it.active).put("type",it.type.name).put("color",it.color).put("sort",it.sortOrder).put("createdAt",it.createdAt).put("includeInTotal",it.includeInTotal)) } })
         root.put("paymentMethods", JSONArray().apply { snapshot.paymentMethods.forEach { put(JSONObject().put("id",it.id).put("name",it.name).put("color",it.color).put("sort",it.sortOrder).put("active",it.active)) } })
@@ -104,11 +104,28 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
         root.put("adjustments", JSONArray().apply { snapshot.adjustments.forEach { put(JSONObject().put("id",it.id).put("accountId",it.accountId).put("delta",it.deltaCents).put("occurredAt",it.occurredAt).put("note",it.note)) } })
         root.put("budgets", JSONArray().apply { snapshot.budgets.forEach { put(JSONObject().put("id",it.id).put("month",it.yearMonth).put("categoryId",it.categoryId).put("limit",it.limitCents)) } })
         root.put("recurring", JSONArray().apply { snapshot.recurringRules.forEach { put(JSONObject().put("id",it.id).put("title",it.title).put("type",it.type.name).put("amount",it.amountCents).put("categoryId",it.categoryId).put("accountId",it.accountId).put("repeat",it.repeatType.name).put("startAt",it.startAt).put("endAt",it.endAt).put("nextAt",it.nextAt).put("days",it.remindDaysBefore).put("hour",it.remindHour).put("minute",it.remindMinute).put("active",it.active).put("paymentMethodId",it.paymentMethodId)) } })
-        output.writer(Charsets.UTF_8).use { it.write(root.toString(2)) }
+        output.writer(Charsets.UTF_8).apply { write(root.toString(2)); flush() }
     }
 
     suspend fun importJson(uri: Uri) {
         val raw = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: error("无法读取备份")
+        val payload = parseBackupJson(raw)
+        dao.restorePreservingCurrent(payload){current->
+            FileOutputStream(context.filesDir.resolve("恢复前自动备份.json")).use{writeBackup(current,it)}
+        }
+    }
+
+    internal suspend fun snapshot(): BackupPayload = dao.snapshot()
+    internal suspend fun restoreSnapshot(payload: BackupPayload, preserve: suspend (BackupPayload) -> Unit) = dao.restorePreservingCurrent(payload, preserve)
+
+    // 恢复结果依赖实际落盘状态，此处需要 commit 的布尔结果。
+    @android.annotation.SuppressLint("UseKtx")
+    internal fun saveRestoredAppearance(value: AppearanceSettings): Boolean = context.getSharedPreferences("appearance", Context.MODE_PRIVATE).edit()
+        .putString("themeMode", value.themeMode).putString("backgroundType", value.backgroundType)
+        .putLong("colorStart", value.colorStart).putLong("colorEnd", value.colorEnd)
+        .putString("imageUri", value.imageUri).putFloat("overlayAlpha", value.overlayAlpha).commit()
+
+    internal fun parseBackupJson(raw: String): BackupPayload {
         require(raw.isNotBlank()){ "备份文件为空，请重新选择" }
         val root = JSONObject(raw)
         val version = root.getInt("version")
@@ -142,10 +159,7 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
         require(payload.transactions.all { it.amountCents > 0 && it.categoryId in categoryIds && it.accountId in accountIds }) { "备份账目数据无效" }
         require(payload.transfers.all { it.amountCents > 0 && it.fromAccountId in accountIds && it.toAccountId in accountIds && it.fromAccountId != it.toAccountId }) { "备份转账数据无效" }
         require(payload.adjustments.all { it.accountId in accountIds }) { "备份余额校准数据无效" }
-        // 恢复前保留最近一次完整快照，防止误选备份后无法找回。
-        dao.restorePreservingCurrent(payload){current->
-            FileOutputStream(context.filesDir.resolve("恢复前自动备份.json")).use{writeBackup(current,it)}
-        }
+        return payload
     }
 
     fun exportCsv(rows: List<TransactionRow>, transfers: List<TransferRow>, adjustments: List<AccountAdjustmentRow>, output: OutputStream) {
@@ -157,7 +171,7 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
             val lines = rows.map { CsvLine(it.occurredAt,if(it.type==MoneyType.INCOME)"收入" else "支出",it.amountCents,it.categoryName,it.accountName,it.paymentMethodName,it.note) }
             lines.sortedByDescending { it.at }.forEach { t ->
                 val cells = listOf(f.format(java.util.Date(t.at)), t.type, java.math.BigDecimal.valueOf(t.amount,2).toPlainString(), t.category, t.account, t.target, t.note)
-                w.appendLine(cells.joinToString(",") { "\"${it.replace("\"", "\"\"")}\"" })
+                w.appendLine(cells.mapIndexed { index, value -> csvCell(value, text = index != 2) }.joinToString(","))
             }
         }
     }

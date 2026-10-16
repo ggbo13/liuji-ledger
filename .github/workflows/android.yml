@@ -1,0 +1,122 @@
+name: Android 自动检查
+
+on:
+  push:
+    branches: [master, 'codex/**']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: 构建、单元测试与 Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: 安装固定的 Android 构建平台
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: 编译并检查（不接触正式签名）
+        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:testReleaseUnitTest :app:lintDebug :app:lintRelease :app:assembleDebugAndroidTest --no-daemon --max-workers=2
+      - name: 保存测试和 Lint 报告
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unit-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-*
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: 汇总通过、失败和跳过数量
+        if: always()
+        shell: pwsh
+        run: |
+          $taskFiles = Get-ChildItem app/build/test-results -Filter 'TEST-*.xml' -Recurse -ErrorAction SilentlyContinue
+          $taskTests = 0; $taskFailures = 0; $taskErrors = 0; $taskSkipped = 0
+          foreach ($taskFile in $taskFiles) {
+            foreach ($taskSuite in (Select-Xml -LiteralPath $taskFile.FullName -XPath '/testsuite | /testsuites/testsuite').Node) {
+              $taskTests += [int]$taskSuite.tests; $taskFailures += [int]$taskSuite.failures
+              $taskErrors += [int]$taskSuite.errors; $taskSkipped += [int]$taskSuite.skipped
+            }
+          }
+          "单元测试：总数 $taskTests，通过 $($taskTests-$taskFailures-$taskErrors-$taskSkipped)，失败 $taskFailures，错误 $taskErrors，跳过 $taskSkipped。" >> $env:GITHUB_STEP_SUMMARY
+
+  instrumented:
+    name: 模拟器 API ${{ matrix.api }} 实测
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 36]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          cache-read-only: true
+      - name: 启用模拟器硬件加速
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: 实际执行数据库和界面测试
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: |
+            bash .github/scripts/device-tests.sh
+      - name: 保存真实执行结果（含跳过项目）
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: device-reports-api-${{ matrix.api }}
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            app/build/reports/visual116/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: 汇总设备实测结果
+        if: always()
+        shell: pwsh
+        run: |
+          $taskFiles = Get-ChildItem app/build/outputs/androidTest-results -Filter '*.xml' -Recurse -ErrorAction SilentlyContinue
+          $taskTests = 0; $taskFailures = 0; $taskErrors = 0; $taskSkipped = 0
+          foreach ($taskFile in $taskFiles) {
+            foreach ($taskSuite in (Select-Xml -LiteralPath $taskFile.FullName -XPath '/testsuite | /testsuites/testsuite').Node) {
+              $taskTests += [int]$taskSuite.tests; $taskFailures += [int]$taskSuite.failures
+              $taskErrors += [int]$taskSuite.errors; $taskSkipped += [int]$taskSuite.skipped
+            }
+          }
+          "API${{ matrix.api }} 实测：总数 $taskTests，通过 $($taskTests-$taskFailures-$taskErrors-$taskSkipped)，失败 $taskFailures，错误 $taskErrors，跳过 $taskSkipped。" >> $env:GITHUB_STEP_SUMMARY
+          if ($taskTests -eq 0 -or $taskTests -eq $taskSkipped) { throw '未实际执行任何设备测试，不能视为通过' }

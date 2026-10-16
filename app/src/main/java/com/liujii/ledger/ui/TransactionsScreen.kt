@@ -256,7 +256,7 @@ internal fun SwipeRevealTransaction(
             color=MaterialTheme.colorScheme.surface.copy(alpha=.92f),
         ){
             // 滑动背景铺满宽度，内容留出独立边距，金额不再贴着条形边缘。
-            Box(Modifier.fillMaxWidth().padding(horizontal=20.dp)){TransactionCompact(row)}
+            Box(Modifier.fillMaxWidth().padding(start=20.dp)){TransactionCompact(row)}
         }
     }
 }
@@ -379,7 +379,14 @@ private fun TransactionEditorForm(vm: LedgerViewModel, existing: TransactionRow?
             },enabled=!saving,modifier=Modifier.fillMaxWidth().padding(top=8.dp).heightIn(min=48.dp)){Text("再记一笔")}
         }
     }
-    if(confirmClose)AlertDialog(onDismissRequest={if(!saving)confirmClose=false},title={Text("账目尚未保存")},text={Text("可以保存账目，或保留草稿稍后继续。")},confirmButton={TextButton(onClick={confirmClose=false;save()},enabled=valid&&!saving){Text("保存")}},dismissButton={Column{TextButton(onClick={if(!saving){draftSession.finish(currentDraft);confirmClose=false;onDismiss()}},enabled=!saving){Text("保留草稿并退出")};TextButton(onClick={if(!saving){draftSession.finish(null);confirmClose=false;onDismiss()}},enabled=!saving){Text("放弃修改",color=Coral)};TextButton(onClick={confirmClose=false},enabled=!saving){Text("继续编辑")}}})
+    if(confirmClose)AlertDialog(onDismissRequest={if(!saving)confirmClose=false},title={Text("账目尚未保存")},text={Text("可以保存账目，或保留草稿稍后继续。")},confirmButton={
+        Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)){
+            DialogAction("保存",onClick={confirmClose=false;save()},enabled=valid&&!saving,modifier=Modifier.fillMaxWidth())
+            DialogAction("保留草稿并退出",onClick={draftSession.finish(currentDraft);confirmClose=false;onDismiss()},enabled=!saving,modifier=Modifier.fillMaxWidth())
+            DialogAction("放弃修改",onClick={draftSession.finish(null);confirmClose=false;onDismiss()},enabled=!saving,modifier=Modifier.fillMaxWidth(),destructive=true)
+            DialogAction("继续编辑",onClick={confirmClose=false},enabled=!saving,modifier=Modifier.fillMaxWidth())
+        }
+    })
     if(datePicker) {
         val state=rememberDatePickerState(initialSelectedDateMillis=date.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(onDismissRequest={datePicker=false},confirmButton={TextButton(onClick={state.selectedDateMillis?.let{date=Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate()};datePicker=false}){Text("确定")}},dismissButton={TextButton(onClick={datePicker=false}){Text("取消")}}){DatePicker(state)}

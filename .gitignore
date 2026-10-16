@@ -37,4 +37,6 @@ signing.properties
 *.csv
 *备份*.json
 backup*.json
+*备份*.zip
+liuji-backup*.zip
 *.log
