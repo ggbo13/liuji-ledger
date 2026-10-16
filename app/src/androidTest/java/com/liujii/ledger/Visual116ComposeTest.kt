@@ -108,7 +108,7 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
         val output=InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
         val directory=(output?.let{java.io.File(it)}?:instrumentation.targetContext.filesDir).resolve("visual116").apply{mkdirs()}
         val file=directory.resolve("${name}_${width}_${fontScale}_${dark}.png")
-        val image=compose.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap()
+        val image=(if(name=="preview")compose.onNode(isDialog())else compose.onAllNodes(isRoot()).onLast()).captureToImage().asAndroidBitmap()
         file.outputStream().use{assertTrue(image.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it))}
     }
 }

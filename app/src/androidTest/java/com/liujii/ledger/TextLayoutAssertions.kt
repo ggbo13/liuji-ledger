@@ -13,7 +13,9 @@ internal fun assertVisibleTextFits(layout: TextLayoutResult, allowEllipsis: Bool
     // 检查各行实际文字宽度与行底边，仍能识别真实的横向裁切和高度不足。
     for(line in 0 until layout.lineCount) {
         val width=layout.getLineRight(line)-layout.getLineLeft(line)
-        assertTrue("横向裁切：$detail，行宽=$width",width<=layout.size.width+1f)
+        // 省略号的字形度量可有亚像素外伸；仅明确授权的 Ellipsis 行按其裁剪契约判断。
+        if(layout.isLineEllipsized(line))assertTrue("省略方式不正确：$detail",allowEllipsis&&layout.layoutInput.overflow==androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        else assertTrue("横向裁切：$detail，行宽=$width",width<=layout.size.width+1f)
         assertTrue("纵向裁切：$detail，行底=${layout.getLineBottom(line)}",layout.getLineBottom(line)<=layout.size.height+1f)
     }
 }

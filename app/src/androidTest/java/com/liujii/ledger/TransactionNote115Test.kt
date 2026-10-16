@@ -45,6 +45,7 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
     private var fieldWindowBounds = Rect.Zero
     private var viewportWindowBounds = Rect.Zero
     private var originalSoftInputMode = 0
+    private var originalImeFocusFlag = false
 
     companion object {
         @JvmStatic
@@ -58,6 +59,7 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         compose.runOnUiThread {
             val window = compose.activity.window
             originalSoftInputMode = window.attributes.softInputMode
+            originalImeFocusFlag = window.attributes.flags and WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM != 0
             WindowCompat.setDecorFitsSystemWindows(window, false)
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         }
@@ -68,6 +70,7 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
             val window = compose.activity.window
             WindowCompat.getInsetsController(window, window.decorView).hide(WindowInsetsCompat.Type.ime())
             window.setSoftInputMode(originalSoftInputMode)
+            if(!originalImeFocusFlag)window.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
         }
     }
 
@@ -110,6 +113,8 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
     }
 
     @Test fun focusingOffscreenNoteAndEnteringTextKeepsEntireFieldInsideScrollViewport() {
+        // 此用例隔离聚焦滚动；真实键盘的出现、输入与避让由下一个独立用例验证。
+        compose.runOnUiThread {compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)}
         setNoteFixture()
         val field = compose.onNodeWithTag("备注输入")
         field.assertIsNotDisplayed()
