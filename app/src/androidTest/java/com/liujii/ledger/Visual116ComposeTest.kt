@@ -13,6 +13,9 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.test.platform.app.InstrumentationRegistry
 import com.liujii.ledger.data.*
 import com.liujii.ledger.ui.*
@@ -26,6 +29,14 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 class Visual116ComposeTest(private val width: Int, private val fontScale: Float, private val dark: Boolean) {
     @get:Rule val compose=createComposeRule()
+    private var expectedBackground=Color.Unspecified
+    private val syntheticImage by lazy {
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val file=context.cacheDir.resolve("visual-bg-${java.util.UUID.randomUUID()}.png")
+        val bitmap=android.graphics.Bitmap.createBitmap(8,8,android.graphics.Bitmap.Config.ARGB_8888).apply{eraseColor(android.graphics.Color.YELLOW)}
+        file.outputStream().use{assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it))}
+        android.net.Uri.fromFile(file).toString()
+    }
     companion object {
         @JvmStatic @Parameterized.Parameters(name="{0}dp_字体{1}_夜间{2}")
         fun configurations():List<Array<Any>> = listOf(320,360,400).flatMap { w -> listOf(1f,2f).flatMap { f -> listOf(false,true).map{d->arrayOf<Any>(w,f,d)} } }
@@ -34,7 +45,8 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
         DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(DpSize(width.dp,900.dp))){
             DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(fontScale)){
                 LiuJiTheme(AppearanceSettings(themeMode=if(dark)"dark"else"light",overlayAlpha=.45f)){
-                    Background(AppearanceSettings(overlayAlpha=.45f)){content()}
+                    expectedBackground=MaterialTheme.colorScheme.background.copy(alpha=.45f).compositeOver(Color.Yellow)
+                    Background(AppearanceSettings(backgroundType="image",imageUri=syntheticImage,overlayAlpha=.45f)){content()}
                 }
             }
         }
@@ -42,7 +54,7 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
     @Test fun transactionHasReadableLargeAmountAndSixteenDpRightSpace() {
         val row=TransactionRow(42,MoneyType.EXPENSE,99999999999,7,1,1700000000000,"很长的备注会优先省略而不是挤掉金额".repeat(4),null,"测试分类","测",0xFFE76F64,"测试账本",2,"测试收支方式",0xFF4D8BB8)
         var inset=0f
-        compose.setContent{Fixture{inset=with(LocalDensity.current){16.dp.toPx()};Box(Modifier.fillMaxWidth().testTag("流水视口")){TransactionCompact(row)}}}
+        compose.setContent{Fixture{inset=with(LocalDensity.current){16.dp.toPx()};Box(Modifier.fillMaxWidth().testTag("流水视口")){SwipeRevealTransaction(row,false,{},{},{})}}}
         val amount=compose.onNodeWithText(money(-row.amountCents),useUnmergedTree=true)
         amount.assertIsDisplayed()
         val root=compose.onNodeWithTag("流水视口").fetchSemanticsNode().boundsInRoot
@@ -53,7 +65,7 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
     @Test fun dialogActionsStayCenteredAndTouchTargetsAreLargeEnough() {
         var clicked=false
         var minimum=0f
-        compose.setContent{Fixture{minimum=with(LocalDensity.current){48.dp.toPx()};Column(Modifier.fillMaxWidth()){
+        compose.setContent{Fixture{minimum=with(LocalDensity.current){48.dp.toPx()};GlassCard(Modifier.fillMaxWidth()){
             DialogAction("保留草稿并退出",onClick={clicked=true},modifier=Modifier.fillMaxWidth().testTag("操作按钮"))
         }}}
         val button=compose.onNodeWithTag("操作按钮").fetchSemanticsNode().boundsInRoot
@@ -84,6 +96,13 @@ class Visual116ComposeTest(private val width: Int, private val fontScale: Float,
     }
     private fun capture(name:String) {
         // 只保存人工合成的测试界面，不访问真实账本或用户图片。
+        if(name!="preview")compose.waitUntil(5_000){
+            val image=compose.onAllNodes(isRoot()).onLast().captureToImage()
+            val pixel=image.toPixelMap()[image.width-2,image.height-2]
+            kotlin.math.abs(pixel.red-expectedBackground.red)<.025f&&
+                kotlin.math.abs(pixel.green-expectedBackground.green)<.025f&&
+                kotlin.math.abs(pixel.blue-expectedBackground.blue)<.025f
+        }
         val directory=InstrumentationRegistry.getInstrumentation().targetContext.filesDir.resolve("visual116").apply{mkdirs()}
         val file=directory.resolve("${name}_${width}_${fontScale}_${dark}.png")
         val image=compose.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap()
