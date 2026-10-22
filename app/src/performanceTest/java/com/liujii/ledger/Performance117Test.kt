@@ -107,7 +107,7 @@ class Performance117Test {
                 val screen=Rect().also{root.getBoundsInScreen(it)}
                 val nodes=ArrayDeque<AccessibilityNodeInfo>();nodes.add(root)
                 while(nodes.isNotEmpty()){
-                    val current=nodes.removeFirst();current.refresh()
+                    val current=nodes.removeFirst();if(!current.refresh())continue
                     val visible=Rect().also{current.getBoundsInScreen(it)}
                     if(current.text?.toString()==heading&&current.isVisibleToUser&&visible.centerY()<screen.top+screen.height()/3){automation.waitForIdle(350,15000);return}
                     for(i in 0 until current.childCount)current.getChild(i)?.let{nodes.add(it)}

@@ -30,6 +30,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -402,11 +403,12 @@ internal fun TransactionNoteField(
 ) {
     val bringIntoViewRequester=remember{BringIntoViewRequester()}
     var focused by remember{mutableStateOf(false)}
+    var fieldHeight by remember{mutableIntStateOf(0)}
     val imeBottom=WindowInsets.ime.getBottom(LocalDensity.current)
     val keyboard=LocalSoftwareKeyboardController.current
-    LaunchedEffect(focused,imeBottom) {
+    LaunchedEffect(focused,imeBottom,fieldHeight) {
         if(focused) {
-            // 等当前帧按实际输入法高度完成布局，再将备注字段本身移入可见区域。
+            // 标签和大字体也可能改变字段高度；按当前真实尺寸重新避让，不只追踪键盘。
             withFrameNanos { }
             bringIntoViewRequester.bringIntoView()
         }
@@ -415,7 +417,8 @@ internal fun TransactionNoteField(
         value=value,
         onValueChange=onValueChange,
         modifier=modifier.fillMaxWidth().bringIntoViewRequester(bringIntoViewRequester)
-            .onFocusChanged{focused=it.isFocused},
+            .onFocusChanged{focused=it.isFocused}
+            .onSizeChanged{fieldHeight=it.height},
         enabled=enabled,
         label={Text("备注（可选）")},
         singleLine=true,
