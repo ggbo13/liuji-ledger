@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.liujii.ledger.data.*
 
@@ -59,8 +60,8 @@ internal fun OfficialThemeGallery(settings: AppearanceSettings,enabled:Boolean=t
                                         }
                                     }
                                 }
-                                Text(preset.name,style=MaterialTheme.typography.labelLarge,fontWeight=FontWeight.SemiBold)
-                                Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                                Text(preset.name,modifier=Modifier.fillMaxWidth(),textAlign=TextAlign.Center,style=MaterialTheme.typography.labelLarge,fontWeight=FontWeight.SemiBold)
+                                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp,Alignment.CenterHorizontally)) {
                                     if(active)Icon(Icons.Default.CheckCircle,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)
                                     Text(if(active)"使用中"else"点按应用",style=MaterialTheme.typography.labelMedium,color=if(active)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
