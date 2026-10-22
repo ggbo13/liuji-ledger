@@ -75,6 +75,9 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
             imageUri = p.getString("imageUri", null),
             overlayAlpha = p.getFloat("overlayAlpha", .84f),
             appLockEnabled = p.getBoolean("appLockEnabled", false),
+            themeId = themePreset(p.getString("themeId", "mint") ?: "mint").id,
+            useThemeBackground = p.getBoolean("useThemeBackground", p.all.isEmpty()),
+            motionEnabled = p.getBoolean("motionEnabled", true),
         )
     }
 
@@ -87,6 +90,9 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
             .putString("imageUri", value.imageUri)
             .putFloat("overlayAlpha", value.overlayAlpha)
             .putBoolean("appLockEnabled", value.appLockEnabled)
+            .putString("themeId", themePreset(value.themeId).id)
+            .putBoolean("useThemeBackground", value.useThemeBackground)
+            .putBoolean("motionEnabled", value.motionEnabled)
             .apply()
     }
 
@@ -123,7 +129,9 @@ class LedgerRepository(private val context: Context, private val dao: LedgerDao)
     internal fun saveRestoredAppearance(value: AppearanceSettings): Boolean = context.getSharedPreferences("appearance", Context.MODE_PRIVATE).edit()
         .putString("themeMode", value.themeMode).putString("backgroundType", value.backgroundType)
         .putLong("colorStart", value.colorStart).putLong("colorEnd", value.colorEnd)
-        .putString("imageUri", value.imageUri).putFloat("overlayAlpha", value.overlayAlpha).commit()
+        .putString("imageUri", value.imageUri).putFloat("overlayAlpha", value.overlayAlpha)
+        .putString("themeId",themePreset(value.themeId).id).putBoolean("useThemeBackground",value.useThemeBackground)
+        .putBoolean("motionEnabled",value.motionEnabled).commit()
 
     internal fun parseBackupJson(raw: String): BackupPayload {
         require(raw.isNotBlank()){ "备份文件为空，请重新选择" }

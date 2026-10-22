@@ -1,0 +1,8 @@
+// 同一份黑盒触摸夹具分别编译到旧版与新版，保证比较方法一致。
+allprojects { project ->
+    project.afterEvaluate {
+        if (project.plugins.hasPlugin('com.android.application')) {
+            project.android.sourceSets.getByName('androidTest').java.setSrcDirs([System.getProperty('liuji.performance.sources')])
+        }
+    }
+}

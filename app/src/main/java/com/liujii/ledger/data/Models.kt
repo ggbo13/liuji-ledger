@@ -168,4 +168,7 @@ data class AppearanceSettings(
     val imageUri: String? = null,
     val overlayAlpha: Float = 0.84f,
     val appLockEnabled: Boolean = false,
+    val themeId: String = "mint",
+    val useThemeBackground: Boolean = false,
+    val motionEnabled: Boolean = true,
 )

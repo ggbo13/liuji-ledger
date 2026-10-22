@@ -9,6 +9,15 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.liujii.ledger.data.themePreset
+import com.liujii.ledger.data.shouldAnimate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -21,23 +30,28 @@ val Coral = Color(0xFFE76F64)
 val Night = Color(0xFF10171D)
 val Paper = Color(0xFFF9FBFC)
 
-private val LightColors = lightColorScheme(
-    primary = DeepSlate, secondary = Color(0xFF197653), tertiary = Color(0xFFB34840),
-    background = MistBlue, surface = Paper, onPrimary = Color.White,
-    secondaryContainer=Color(0xFFDCEFE8),onSecondaryContainer=DeepSlate,
-    onBackground = DeepSlate, onSurface = DeepSlate,
-)
+private val LightColors = themeColorScheme(themePreset("mint"),false)
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFB7C9D8), secondary = Color(0xFF69D0AA), tertiary = Color(0xFFFFA49A),
-    background = Night, surface = Color(0xFF182229), onPrimary = Night,
-    secondaryContainer=Color(0xFF28473C),onSecondaryContainer=Color(0xFFE6EDF2),
-    onBackground = Color(0xFFE6EDF2), onSurface = Color(0xFFE6EDF2),
-)
+private val DarkColors = themeColorScheme(themePreset("mint"),true)
+
+private val LedgerTypography=Typography().let { base->base.copy(
+    headlineMedium=base.headlineMedium.copy(fontSize=24.sp,lineHeight=32.sp),
+    titleLarge=base.titleLarge.copy(fontSize=20.sp,lineHeight=28.sp),
+    titleMedium=base.titleMedium.copy(fontSize=18.sp,lineHeight=26.sp),
+    bodyLarge=base.bodyLarge.copy(fontSize=16.sp,lineHeight=24.sp),
+    bodyMedium=base.bodyMedium.copy(fontSize=16.sp,lineHeight=24.sp),
+    bodySmall=base.bodySmall.copy(fontSize=13.sp,lineHeight=20.sp),
+    labelLarge=base.labelLarge.copy(fontSize=14.sp,lineHeight=20.sp),
+    labelSmall=base.labelSmall.copy(fontSize=13.sp,lineHeight=18.sp),
+)}
+private val LedgerShapes=Shapes(extraSmall=RoundedCornerShape(8.dp),small=RoundedCornerShape(12.dp),medium=RoundedCornerShape(16.dp),large=RoundedCornerShape(20.dp),extraLarge=RoundedCornerShape(24.dp))
 
 @Composable
 fun LiuJiTheme(settings: AppearanceSettings, content: @Composable () -> Unit) {
     val dark = settings.themeMode == "dark" || (settings.themeMode == "system" && isSystemInDarkTheme())
+    val motion=shouldAnimate(settings.motionEnabled,systemAnimationScale())
+    val target=remember(settings.themeId,dark){if(settings.themeId=="mint"){if(dark)DarkColors else LightColors}else themeColorScheme(themePreset(settings.themeId),dark)}
+    val colors=animatedThemeColors(target,motion)
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -49,7 +63,9 @@ fun LiuJiTheme(settings: AppearanceSettings, content: @Composable () -> Unit) {
             }
         }
     }
-    MaterialTheme(colorScheme = if (dark) DarkColors else LightColors, typography = androidx.compose.material3.Typography(), content = content)
+    CompositionLocalProvider(LocalMotionEnabled provides motion,LocalDarkAppearance provides dark) {
+        MaterialTheme(colorScheme=colors,typography=LedgerTypography,shapes=LedgerShapes,content=content)
+    }
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

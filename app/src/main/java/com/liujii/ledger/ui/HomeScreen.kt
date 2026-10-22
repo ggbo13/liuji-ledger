@@ -81,7 +81,7 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
             CashTrail(trail)
         }
 
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(24.dp))
         SectionHeader("账本","管理",onManageAccounts)
         Column(Modifier.fillMaxWidth().padding(vertical=6.dp)) {
             Text("把生活、工作和特定项目分开记录",color=MaterialTheme.colorScheme.onSurfaceVariant)
@@ -90,13 +90,16 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
             if(accounts.isEmpty())Text("还没有可用账本",color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(24.dp))
         SectionHeader("本月预算", "管理", onManageBudget)
         GlassCard(Modifier.fillMaxWidth()) {
             if(budget == null) Text("尚未设置总预算，可在设置中添加", color=MaterialTheme.colorScheme.onSurfaceVariant)
             else {
                 val progress = (expense.toFloat()/budget.limitCents).coerceAtLeast(0f)
-                Row(Modifier.fillMaxWidth()) { Text("已用 ${money(expense)}", Modifier.weight(1f)); Text("额度 ${money(budget.limitCents)}") }
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.weight(1f)){Text("已用",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Text(money(expense),fontFamily=FontFamily.Monospace)}
+                    Column(Modifier.weight(1f)){Text("额度",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Text(money(budget.limitCents),fontFamily=FontFamily.Monospace)}
+                }
                 Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(progress={progress.coerceAtMost(1f)}, Modifier.fillMaxWidth().height(8.dp), color=if(progress>1) Coral else Mint, trackColor=MaterialTheme.colorScheme.surfaceVariant)
                 Spacer(Modifier.height(8.dp))
@@ -106,7 +109,7 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
         }
 
         if(upcoming.isNotEmpty()) {
-            Spacer(Modifier.height(22.dp)); SectionHeader("待入账与近期账单")
+            Spacer(Modifier.height(24.dp)); SectionHeader("待入账与近期账单")
             GlassCard(Modifier.fillMaxWidth()) {
                 upcoming.forEachIndexed { index, rule ->
                     Row(Modifier.fillMaxWidth().padding(vertical=8.dp), verticalAlignment=Alignment.CenterVertically) {
@@ -120,7 +123,7 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
             }
         }
 
-        Spacer(Modifier.height(22.dp)); SectionHeader("最近流水", "查看全部", onSeeAll)
+        Spacer(Modifier.height(24.dp)); SectionHeader("最近流水", "查看全部", onSeeAll)
         GlassCard(Modifier.fillMaxWidth()) {
             if(recent.isEmpty()) Text("还没有账目，点右下角 + 记下第一笔", color=MaterialTheme.colorScheme.onSurfaceVariant)
             recent.forEach { movement->movement.transaction?.let{row->Surface(Modifier.fillMaxWidth().clickable{editingRow=row},color=Color.Transparent){TransactionCompact(row)}};movement.transfer?.let{TransferCompact(it)} }

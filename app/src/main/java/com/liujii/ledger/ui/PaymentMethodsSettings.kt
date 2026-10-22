@@ -40,13 +40,13 @@ fun PaymentMethodsSettings(vm: LedgerViewModel) {
     }
     if(disabledMethods.isNotEmpty()) {
         TextButton(onClick={showDisabled=!showDisabled},modifier=Modifier.heightIn(min=48.dp)){Text("已停用（${disabledMethods.size}）${if(showDisabled)" · 收起"else" · 展开"}")}
-        if(showDisabled)disabledMethods.forEach{method->
+        AnimatedGroup(showDisabled){disabledMethods.forEach{method->
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
                 Text(method.name,Modifier.weight(1f),maxLines=1,overflow=TextOverflow.Ellipsis,color=MaterialTheme.colorScheme.onSurfaceVariant)
                 val processing=vm.isProcessing("method-active-${method.id}")
                 TextButton(onClick={vm.setPaymentMethodActive(method.id,true){failure->error=failure}},enabled=!processing){Text(if(processing)"处理中…"else"启用",maxLines=1)}
             }
-        }
+        }}
     }
     if(adding||editing!=null) {
         val current=editing

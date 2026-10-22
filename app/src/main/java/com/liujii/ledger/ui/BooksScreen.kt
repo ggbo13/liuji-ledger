@@ -68,13 +68,13 @@ fun BooksScreen(vm: LedgerViewModel, onBack: () -> Unit) {
         if(ordering)Text("正在保存顺序…",style=MaterialTheme.typography.bodySmall)
         if(disabledBooks.isNotEmpty()) {
             TextButton(onClick={showDisabled=!showDisabled},modifier=Modifier.heightIn(min=48.dp)){Text("已停用（${disabledBooks.size}）${if(showDisabled)" · 收起"else" · 展开"}")}
-            if(showDisabled)disabledBooks.forEach{book->
+            AnimatedGroup(showDisabled){disabledBooks.forEach{book->
                 Row(Modifier.fillMaxWidth().padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){
                     Text(book.name,Modifier.weight(1f),maxLines=1,overflow=TextOverflow.Ellipsis,color=MaterialTheme.colorScheme.onSurfaceVariant)
                     val processing=vm.isProcessing("book-active-${book.id}")
                     TextButton(onClick={vm.setBookActive(book.id,true){failure->message=failure}},enabled=!processing){Text(if(processing)"处理中…"else"启用",maxLines=1)}
                 }
-            }
+            }}
         }
     }
     if(adding) BookDialog(vm,null,onDismiss={adding=false})

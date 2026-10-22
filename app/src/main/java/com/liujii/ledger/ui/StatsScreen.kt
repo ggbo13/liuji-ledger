@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -173,6 +174,20 @@ internal fun StatisticsTrendChart(series:StatisticsChartSeries){
     val max=series.maxAmount
     val gridColor=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.45f)
     val cursorColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.72f)
+    // 游标每帧变化只绘制覆盖层；线段路径仅随数据、颜色或画布尺寸重建。
+    val cachedLines=remember(series,gridColor){Modifier.drawWithCache{
+        fun path(values:List<Long>)=Path().apply{values.forEachIndexed{i,v->
+            val x=if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1)
+            val y=size.height-(v.toFloat()/max)*size.height*.9f
+            if(i==0)moveTo(x,y)else lineTo(x,y)
+        }}
+        val incomePath=path(inc);val expensePath=path(exp)
+        onDrawBehind{
+            repeat(4){i->val y=size.height*i/3;drawLine(gridColor,Offset(0f,y),Offset(size.width,y),1.dp.toPx())}
+            drawPath(incomePath,Mint,style=Stroke(2.5.dp.toPx()));drawPath(expensePath,Coral,style=Stroke(2.5.dp.toPx()))
+            if(dates.size<16){inc.forEachIndexed{i,v->drawCircle(Mint,3.dp.toPx(),Offset(if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1),size.height-v.toFloat()/max*size.height*.9f))};exp.forEachIndexed{i,v->drawCircle(Coral,3.dp.toPx(),Offset(if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1),size.height-v.toFloat()/max*size.height*.9f))}}
+        }
+    }}
     var selectedIndex by remember(series) { mutableStateOf<Int?>(null) }
     var accessibilityIndex by remember(series) { mutableIntStateOf(0) }
     val summaryIndex=(selectedIndex?:accessibilityIndex).takeIf{it in dates.indices}
@@ -205,11 +220,8 @@ internal fun StatisticsTrendChart(series:StatisticsChartSeries){
             }
         }
     ){
-        Canvas(Modifier.fillMaxWidth().height(180.dp).align(Alignment.BottomCenter)){
-            repeat(4){i->val y=size.height*i/3;drawLine(gridColor,Offset(0f,y),Offset(size.width,y),1.dp.toPx())}
+        Canvas(Modifier.fillMaxWidth().height(180.dp).align(Alignment.BottomCenter).then(cachedLines)){
             fun point(index:Int,value:Long)=Offset(if(dates.size==1)size.width/2 else size.width*index/dates.lastIndex,size.height-(value.toFloat()/max)*size.height*.9f)
-            fun draw(values:List<Long>,color:androidx.compose.ui.graphics.Color){val p=Path();values.forEachIndexed{i,v->val point=point(i,v);if(i==0)p.moveTo(point.x,point.y)else p.lineTo(point.x,point.y);drawCircle(color,if(values.size<16)3.dp.toPx() else 1.5.dp.toPx(),point)};drawPath(p,color,style=Stroke(2.5.dp.toPx()))}
-            draw(inc,Mint);draw(exp,Coral)
             selectedIndex?.let{i->val incomePoint=point(i,inc[i]);val expensePoint=point(i,exp[i]);drawLine(cursorColor,Offset(incomePoint.x,0f),Offset(incomePoint.x,size.height),1.5.dp.toPx());drawCircle(Mint,5.dp.toPx(),incomePoint);drawCircle(Coral,5.dp.toPx(),expensePoint)}
         }
         selectedIndex?.let{i->

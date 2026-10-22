@@ -136,7 +136,7 @@ fun TransactionsScreen(vm: LedgerViewModel, onAddTransaction: () -> Unit) {
                     scope.launch{snackbarHostState.showSnackbar("无法打开文件保存位置，请重试")}
                 }
             }
-        },enabled=!fileOperationInProgress&&!choosingCsvFile){Icon(Icons.Default.IosShare,"导出筛选后的收支账目")};FilledIconButton(onClick=onAddTransaction,modifier=Modifier.size(48.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=Mint,contentColor=Color.White)){Icon(Icons.Default.Add,"记一笔")}}
+        },enabled=!fileOperationInProgress&&!choosingCsvFile){Icon(Icons.Default.IosShare,"导出筛选后的收支账目")};FilledIconButton(onClick=onAddTransaction,modifier=Modifier.size(48.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=MaterialTheme.colorScheme.primary,contentColor=MaterialTheme.colorScheme.onPrimary)){Icon(Icons.Default.Add,"记一笔")}}
         Spacer(Modifier.height(14.dp))
         OutlinedTextField(search, {search=it}, Modifier.fillMaxWidth(), placeholder={Text("搜索备注、分类或收支方式")}, leadingIcon={Icon(Icons.Default.Search,null)}, singleLine=true, shape=MaterialTheme.shapes.large)
         Row(Modifier.fillMaxWidth().padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -366,7 +366,7 @@ private fun TransactionEditorForm(vm: LedgerViewModel, existing: TransactionRow?
             TransactionNoteField(note,{note=it.take(80)},Modifier.padding(top=14.dp),enabled=!saving)
             OutlinedButton(onClick={datePicker=true},Modifier.fillMaxWidth().padding(top=14.dp),enabled=!saving){Text("日期：$date")}
             error?.let{Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.padding(top=10.dp))}
-            Button(onClick=save,enabled=valid&&!saving,modifier=Modifier.fillMaxWidth().padding(top=18.dp).heightIn(min=52.dp)){Text(if(saving)"保存中…" else "保存")}
+            PressFeedbackButton(onClick=save,enabled=valid&&!saving,modifier=Modifier.fillMaxWidth().padding(top=16.dp).heightIn(min=52.dp)){Text(if(saving)"保存中…" else "保存")}
             if(existing!=null&&!copyMode) OutlinedButton(onClick={
                 copyMode=true;amount="";date=LocalDate.now();error=null
                 categoryId=fallbackCategoryId(categories,type,categoryId)
