@@ -3,6 +3,7 @@ package com.liujii.ledger.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.liujii.ledger.data.themePreset
 import com.liujii.ledger.data.shouldAnimate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.liujii.ledger.data.AppearanceSettings
@@ -58,6 +60,13 @@ fun LiuJiTheme(settings: AppearanceSettings, content: @Composable () -> Unit) {
     if (!view.isInEditMode) {
         SideEffect {
             view.context.findActivity()?.window?.let { window ->
+                if(Build.VERSION.SDK_INT<35){
+                    // 新系统的系统栏由边到边背景承接，旧系统显式使用当前主题颜色。
+                    @Suppress("DEPRECATION")
+                    window.statusBarColor=colors.background.toArgb()
+                    @Suppress("DEPRECATION")
+                    window.navigationBarColor=colors.surface.toArgb()
+                }
                 WindowCompat.getInsetsController(window, view).apply {
                     isAppearanceLightStatusBars = !dark
                     isAppearanceLightNavigationBars = !dark

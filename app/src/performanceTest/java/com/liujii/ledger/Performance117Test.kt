@@ -70,13 +70,15 @@ class Performance117Test {
         fun percentile(p:Double)=values[((values.size-1)*p).toInt()]/1_000_000.0
         return JSONObject().put("scene",name).put("frames",values.size).put("p50Ms",percentile(.5)).put("p95Ms",percentile(.95)).put("over16_67Ms",values.count{it>16_670_000}).put("elapsedMs",SystemClock.elapsedRealtime()-start)
     }
-    private fun awaitNode(value:String,prefix:Boolean):AccessibilityNodeInfo {
+    private fun awaitNode(value:String,prefix:Boolean,navigation:Boolean=false):AccessibilityNodeInfo {
         val deadline=SystemClock.uptimeMillis()+15000
         while(SystemClock.uptimeMillis()<deadline) {
             val root=automation.rootInActiveWindow
             if(root!=null){val nodes=ArrayDeque<AccessibilityNodeInfo>();nodes.add(root)
+                val screen=Rect().also{root.getBoundsInScreen(it)}
                 while(nodes.isNotEmpty()){val node=nodes.removeFirst();val desc=node.contentDescription?.toString().orEmpty();val text=node.text?.toString().orEmpty()
-                    if((if(prefix)desc.startsWith(value)||text.startsWith(value) else desc==value||text==value)&&node.isVisibleToUser)return node
+                    val bounds=Rect().also{node.getBoundsInScreen(it)}
+                    if((if(prefix)desc.startsWith(value)||text.startsWith(value) else desc==value||text==value)&&node.isVisibleToUser&&(!navigation||bounds.centerY()>screen.bottom-screen.height()/4))return node
                     for(i in 0 until node.childCount)node.getChild(i)?.let{nodes.add(it)}
                 }
             }
@@ -85,9 +87,24 @@ class Performance117Test {
         error("界面未显示：$value")
     }
     private fun tap(value:String) {
-        var node=awaitNode(value,false)
+        var node=awaitNode(value,false,true)
         while(!node.isClickable&&node.parent!=null)node=node.parent
-        check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){"无法点击：$value"}
+        val bounds=Rect().also{node.getBoundsInScreen(it)}
+        val down=SystemClock.uptimeMillis()
+        for(action in listOf(MotionEvent.ACTION_DOWN,MotionEvent.ACTION_UP)){
+            val event=MotionEvent.obtain(down,SystemClock.uptimeMillis(),action,bounds.exactCenterX(),bounds.exactCenterY(),0)
+            event.source=InputDevice.SOURCE_TOUCHSCREEN
+            try{check(automation.injectInputEvent(event,true))}finally{event.recycle()}
+        }
+        // 接收点击不等于切页完成；每次验证导航选中状态，避免把旧页面截图当成新页面。
+        val deadline=SystemClock.uptimeMillis()+15000
+        while(SystemClock.uptimeMillis()<deadline){
+            var selected=awaitNode(value,false,true)
+            while(!selected.isSelected&&selected.parent!=null)selected=selected.parent
+            if(selected.isSelected){automation.waitForIdle(350,15000);return}
+            SystemClock.sleep(100)
+        }
+        error("导航没有切换到：$value")
     }
     private fun swipe(x0:Float,y0:Float,x1:Float,y1:Float,duration:Int) {
         val down=SystemClock.uptimeMillis()

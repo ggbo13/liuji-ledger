@@ -3,7 +3,9 @@ package com.liujii.ledger.data
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 
 data class BackgroundImage(val bitmap:Bitmap?,val failed:Boolean=false)
 
@@ -24,6 +26,16 @@ object BackgroundImages {
         bitmap.recycle()
     }
     private fun decode(context:Context,uri:Uri,width:Int,height:Int):Bitmap?=runCatching {
+        if(Build.VERSION.SDK_INT>=28) {
+            // BitmapFactory可能返回缺失像素的半张图片；新系统使用严格解码，拒绝不完整输入。
+            return@runCatching ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver,uri)){decoder,info,_->
+                decoder.allocator=ImageDecoder.ALLOCATOR_SOFTWARE
+                decoder.setOnPartialImageListener{false}
+                var sample=1
+                while(info.size.width/sample>width.coerceAtLeast(1)*2||info.size.height/sample>height.coerceAtLeast(1)*2)sample*=2
+                decoder.setTargetSampleSize(sample)
+            }
+        }
         val bounds=BitmapFactory.Options().apply{inJustDecodeBounds=true}
         context.contentResolver.openInputStream(uri)?.use{BitmapFactory.decodeStream(it,null,bounds)}
         require(bounds.outWidth>0&&bounds.outHeight>0)
