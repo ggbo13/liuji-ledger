@@ -75,6 +75,7 @@ class Performance117Test {
         while(SystemClock.uptimeMillis()<deadline) {
             val root=automation.rootInActiveWindow
             if(root!=null){val nodes=ArrayDeque<AccessibilityNodeInfo>();nodes.add(root)
+                root.refresh()
                 val screen=Rect().also{root.getBoundsInScreen(it)}
                 while(nodes.isNotEmpty()){val node=nodes.removeFirst();val desc=node.contentDescription?.toString().orEmpty();val text=node.text?.toString().orEmpty()
                     val bounds=Rect().also{node.getBoundsInScreen(it)}
@@ -96,12 +97,22 @@ class Performance117Test {
             event.source=InputDevice.SOURCE_TOUCHSCREEN
             try{check(automation.injectInputEvent(event,true))}finally{event.recycle()}
         }
-        // 接收点击不等于切页完成；每次验证导航选中状态，避免把旧页面截图当成新页面。
+        // 无障碍缓存中的selected可能滞后；验证当前可见标题，而非把旧节点当成界面状态。
+        val heading=if(value=="首页")"流迹"else value
         val deadline=SystemClock.uptimeMillis()+15000
         while(SystemClock.uptimeMillis()<deadline){
-            var selected=awaitNode(value,false,true)
-            while(!selected.isSelected&&selected.parent!=null)selected=selected.parent
-            if(selected.isSelected){automation.waitForIdle(350,15000);return}
+            val root=automation.rootInActiveWindow
+            if(root!=null){
+                root.refresh()
+                val screen=Rect().also{root.getBoundsInScreen(it)}
+                val nodes=ArrayDeque<AccessibilityNodeInfo>();nodes.add(root)
+                while(nodes.isNotEmpty()){
+                    val current=nodes.removeFirst();current.refresh()
+                    val visible=Rect().also{current.getBoundsInScreen(it)}
+                    if(current.text?.toString()==heading&&current.isVisibleToUser&&visible.centerY()<screen.top+screen.height()/3){automation.waitForIdle(350,15000);return}
+                    for(i in 0 until current.childCount)current.getChild(i)?.let{nodes.add(it)}
+                }
+            }
             SystemClock.sleep(100)
         }
         val context=instrumentation.targetContext
