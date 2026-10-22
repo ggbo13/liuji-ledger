@@ -144,9 +144,10 @@ internal fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutCo
             },
             floatingActionButton = { if(!showAccounts&&page < 4 && page != 1) FloatingActionButton(onClick={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE}, containerColor=MaterialTheme.colorScheme.primary, contentColor=MaterialTheme.colorScheme.onPrimary) { Icon(Icons.Default.Add, "快速记账") } },
         ) { padding ->
-            PageTransition(target=if(showAccounts)5 else page,rank={it},modifier=Modifier.fillMaxSize()) { destination ->
+            // 过渡层自身避开导航区域，离场页的触摸屏蔽也只能覆盖页面内容。
+            PageTransition(target=if(showAccounts)5 else page,rank={it},modifier=Modifier.fillMaxSize().padding(if(showAccounts)PaddingValues(0.dp)else padding)) { destination ->
             screenState.SaveableStateProvider(destination) {
-            if(destination==5)BooksScreen(vm,onBack={showAccounts=false}) else Box(Modifier.padding(padding).fillMaxSize()) {
+            if(destination==5)BooksScreen(vm,onBack={showAccounts=false}) else Box(Modifier.fillMaxSize()) {
                 when(destination) {
                     0 -> HomeScreen(vm, onSeeAll={page=1}, onManageBudget={focusBudget=true;page=4},onManageAccounts={showAccounts=true})
                     1 -> TransactionsScreen(vm,onAddTransaction={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE})

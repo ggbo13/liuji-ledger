@@ -20,6 +20,22 @@ import org.junit.Test
 @OptIn(ExperimentalTestApi::class)
 class Motion117ComposeTest {
     @get:Rule val compose=createComposeRule(effectContext=object:MotionDurationScale{override val scaleFactor=1f})
+    @Test fun realNavigationRemainsTouchableWhilePagesAreLeaving() {
+        val application=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as LiuJiApplication
+        val store=androidx.lifecycle.ViewModelStore()
+        val vm=androidx.lifecycle.ViewModelProvider(store,androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(application))[LedgerViewModel::class.java]
+        try{
+            compose.setContent{LiuJiTheme(vm.appearance.value){CompositionLocalProvider(LocalMotionEnabled provides true){LedgerApp(vm,null){}}}}
+            compose.mainClock.autoAdvance=false
+            for(name in listOf("明细","统计","首页","明细","日历","设置","首页")){
+                compose.onNode(hasText(name) and isSelectable()).performTouchInput{click()}
+                compose.mainClock.advanceTimeBy(48)
+                compose.onNode(hasText(name) and isSelectable()).assertIsSelected()
+            }
+            compose.mainClock.advanceTimeBy(1000)
+            compose.mainClock.autoAdvance=true
+        }finally{store.clear()}
+    }
     @Test fun rapidPageChangesKeepSavedInputAndNeverDuplicateStateKeys() {
         var page by mutableIntStateOf(0)
         compose.setContent {

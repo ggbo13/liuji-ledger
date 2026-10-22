@@ -104,7 +104,11 @@ class Performance117Test {
             if(selected.isSelected){automation.waitForIdle(350,15000);return}
             SystemClock.sleep(100)
         }
-        error("导航没有切换到：$value")
+        val context=instrumentation.targetContext
+        val output=InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")?:context.filesDir.absolutePath
+        val directory=java.io.File(output,"performance117").apply{mkdirs()}
+        automation.takeScreenshot()?.let{bitmap->directory.resolve("navigation-failure-${BuildConfig.VERSION_NAME}.png").outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)}}
+        error("导航没有切换到：$value，触摸区域=$bounds")
     }
     private fun swipe(x0:Float,y0:Float,x1:Float,y1:Float,duration:Int) {
         val down=SystemClock.uptimeMillis()
