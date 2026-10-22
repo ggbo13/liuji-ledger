@@ -16,6 +16,23 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 class Theme117IntegrationTest {
+    @Test fun damagedPixelsCannotBeRestoredFromValidHeadersOrOldCache() {
+        Fixture().use{f->
+            val file=f.directory.resolve("cached-photo.png")
+            val bitmap=android.graphics.Bitmap.createBitmap(8,8,android.graphics.Bitmap.Config.ARGB_8888)
+            file.outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)}
+            val uri=Uri.fromFile(file)
+            assertNotNull(BackgroundImages.load(f.context,uri,320,900).bitmap)
+            val bytes=file.readBytes()
+            val idat=(0..bytes.size-4).first{index->bytes[index]==73.toByte()&&bytes[index+1]==68.toByte()&&bytes[index+2]==65.toByte()&&bytes[index+3]==84.toByte()}
+            file.writeBytes(bytes.copyOf(idat+4))
+            val bounds=android.graphics.BitmapFactory.Options().apply{inJustDecodeBounds=true}
+            android.graphics.BitmapFactory.decodeFile(file.absolutePath,bounds)
+            assertTrue("夹具须保留可解析尺寸头",bounds.outWidth>0&&bounds.outHeight>0)
+            assertTrue(runCatching{BackgroundImages.validate(f.context,uri)}.isFailure)
+            assertTrue(BackgroundImages.load(f.context,uri,320,900).failed)
+        }
+    }
     private class Fixture:AutoCloseable {
         val base=InstrumentationRegistry.getInstrumentation().targetContext
         val prefix="themes117-${UUID.randomUUID()}"
@@ -28,7 +45,11 @@ class Theme117IntegrationTest {
         val db=Room.inMemoryDatabaseBuilder(context,LedgerDatabase::class.java).build()
         val repo=LedgerRepository(context,db.dao())
         val manager=FullBackupManager(context,repo)
-        suspend fun seed(){db.dao().insertAccount(AccountEntity(id=1,name="合成账本"))}
+        suspend fun seed(){
+            db.dao().insertAccount(AccountEntity(id=1,name="合成账本"))
+            db.dao().insertPaymentMethod(PaymentMethodEntity(id=1,name="合成方式",color=0xFF4D8BB8))
+            db.dao().insertCategory(CategoryEntity(id=1,name="合成分类",type=MoneyType.EXPENSE,icon="测",color=0xFFE76F64))
+        }
         override fun close(){db.close()}
     }
     @Test fun freshInstallAndLegacyAppearanceHaveDifferentBackgroundDefaults() {

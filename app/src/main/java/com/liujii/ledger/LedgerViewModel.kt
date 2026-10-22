@@ -355,6 +355,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                     val input=resolver.openInputStream(uri)?:error("无法读取所选图片，请重新选择")
                     input.use{android.graphics.BitmapFactory.decodeStream(it,null,bounds)}
                     require(bounds.outWidth>0&&bounds.outHeight>0){"所选文件不是可读取的图片"}
+                    BackgroundImages.validate(getApplication(),uri)
                     if(persistPermission)resolver.takePersistableUriPermission(uri,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 updateAppearance{it.copy(backgroundType="image",imageUri=uri.toString(),useThemeBackground=false)}

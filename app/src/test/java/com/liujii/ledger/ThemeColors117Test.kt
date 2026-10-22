@@ -26,4 +26,14 @@ class ThemeColors117Test {
             assertTrue(schemes.first().tertiary.red>schemes.first().tertiary.green)
         }
     }
+    @Test fun fixedContainersUseThemeColorsInsteadOfMaterialDefaults() {
+        val mint=themeColorScheme(officialThemePresets[0],false)
+        val blue=themeColorScheme(officialThemePresets[1],false)
+        assertNotEquals("固定容器也应随主题改变",mint.primaryFixed,blue.primaryFixed)
+        for(preset in officialThemePresets)for(dark in listOf(false,true)){
+            val c=themeColorScheme(preset,dark)
+            assertTrue(contrast(c.onPrimaryFixed,c.primaryFixed)>=4.5f)
+            assertTrue(contrast(c.onPrimaryFixedVariant,c.primaryFixedDim)>=4.5f)
+        }
+    }
 }

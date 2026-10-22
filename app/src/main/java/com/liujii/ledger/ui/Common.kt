@@ -40,8 +40,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import com.liujii.ledger.data.resolveBackgroundColors
 
-private data class BackgroundImage(val bitmap:android.graphics.Bitmap?,val failed:Boolean=false)
-private val backgroundCache by lazy { object:android.util.LruCache<String,BackgroundImage>(16*1024*1024){override fun sizeOf(key:String,value:BackgroundImage)=value.bitmap?.allocationByteCount?:1} }
+private typealias BackgroundImage = com.liujii.ledger.data.BackgroundImage
 
 @Composable
 fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
@@ -49,17 +48,19 @@ fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
     val windowSize = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize
     val targetWidth = windowSize.width.coerceAtLeast(1)
     val targetHeight = windowSize.height.coerceAtLeast(1)
-    val gradient=resolveBackgroundColors(settings,LocalDarkAppearance.current)
-    val gradientStart by animateColorAsState(Color(gradient.first),tween(if(LocalMotionEnabled.current)250 else 0),label="背景起色")
-    val gradientEnd by animateColorAsState(Color(gradient.second),tween(if(LocalMotionEnabled.current)250 else 0),label="背景终色")
+    val dark=LocalDarkAppearance.current
+    val gradient=resolveBackgroundColors(settings,dark)
+    val animatedGradient=key(dark){
+        val start by animateColorAsState(Color(gradient.first),tween(if(LocalMotionEnabled.current)250 else 0),label="背景起色")
+        val end by animateColorAsState(Color(gradient.second),tween(if(LocalMotionEnabled.current)250 else 0),label="背景终色")
+        start to end
+    }
+    val gradientStart=animatedGradient.first
+    val gradientEnd=animatedGradient.second
     val backgroundImage by produceState(BackgroundImage(null),settings.imageUri,targetWidth,targetHeight,settings.backgroundType) {
         val uri=settings.imageUri
         if(settings.backgroundType=="image"&&uri!=null) {
-            val key="$uri-${targetWidth.toInt()}-${targetHeight.toInt()}"
-            value=backgroundCache.get(key)?:withContext(Dispatchers.IO){
-                val bitmap=loadSampledBackground(context,Uri.parse(uri),targetWidth.toInt(),targetHeight.toInt())
-                BackgroundImage(bitmap,bitmap==null).also{if(bitmap!=null)backgroundCache.put(key,it)}
-            }
+            value=withContext(Dispatchers.IO){com.liujii.ledger.data.BackgroundImages.load(context,Uri.parse(uri),targetWidth,targetHeight)}
         } else value=BackgroundImage(null)
     }
     val loadedBitmap=backgroundImage.bitmap

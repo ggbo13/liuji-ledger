@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,7 +52,8 @@ fun LiuJiTheme(settings: AppearanceSettings, content: @Composable () -> Unit) {
     val dark = settings.themeMode == "dark" || (settings.themeMode == "system" && isSystemInDarkTheme())
     val motion=shouldAnimate(settings.motionEnabled,systemAnimationScale())
     val target=remember(settings.themeId,dark){if(settings.themeId=="mint"){if(dark)DarkColors else LightColors}else themeColorScheme(themePreset(settings.themeId),dark)}
-    val colors=animatedThemeColors(target,motion)
+    // 明暗切换直接换色，防止黑白同时插值时短暂变成灰字灰底；同明暗内换主题仍渐变。
+    val colors=key(dark){animatedThemeColors(target,motion)}
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

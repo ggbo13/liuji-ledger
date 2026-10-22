@@ -182,5 +182,7 @@ jobs:
           path: |
             baseline117/app/build/outputs/connected_android_test_additional_output/**/performance117/*.json
             app/build/outputs/connected_android_test_additional_output/**/performance117/*.json
+            baseline117/app/build/outputs/connected_android_test_additional_output/**/performance117/*.png
+            app/build/outputs/connected_android_test_additional_output/**/performance117/*.png
             baseline117/app/build/outputs/androidTest-results/
             app/build/outputs/androidTest-results/

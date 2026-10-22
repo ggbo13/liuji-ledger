@@ -1,19 +1,25 @@
 package com.liujii.ledger
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.activity.OnBackPressedDispatcher
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.liujii.ledger.ui.*
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalTestApi::class)
 class Motion117ComposeTest {
-    @get:Rule val compose=createComposeRule()
+    @get:Rule val compose=createComposeRule(effectContext=object:MotionDurationScale{override val scaleFactor=1f})
     @Test fun rapidPageChangesKeepSavedInputAndNeverDuplicateStateKeys() {
         var page by mutableIntStateOf(0)
         compose.setContent {
@@ -42,5 +48,47 @@ class Motion117ComposeTest {
         compose.runOnIdle{page=1}
         compose.onNodeWithText("页面1").assertIsDisplayed()
         compose.onNodeWithText("页面0").assertDoesNotExist()
+    }
+    @Test fun outgoingPageCannotInterceptSystemBackDuringTransition() {
+        var page by mutableIntStateOf(0)
+        var rootBack=0
+        var outgoingBack=0
+        lateinit var dispatcher:OnBackPressedDispatcher
+        compose.setContent {
+            dispatcher=LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            BackHandler{rootBack++}
+            CompositionLocalProvider(LocalMotionEnabled provides true){MaterialTheme{
+                PageTransition(page,{it}){destination->
+                    if(destination==0)PageBackHandler(true){outgoingBack++}
+                    Text("页面$destination")
+                }
+            }}
+        }
+        compose.mainClock.autoAdvance=false
+        compose.runOnIdle{page=1}
+        compose.mainClock.advanceTimeBy(48)
+        compose.runOnIdle{dispatcher.onBackPressed()}
+        org.junit.Assert.assertEquals(1,rootBack)
+        org.junit.Assert.assertEquals(0,outgoingBack)
+        compose.mainClock.advanceTimeBy(1000)
+        compose.mainClock.autoAdvance=true
+    }
+    @Test fun settingsSubpageScrollReturnsAfterItsExitCompletes() {
+        var page by mutableStateOf("appearance")
+        var position=0
+        lateinit var scroll:androidx.compose.foundation.ScrollState
+        compose.setContent{CompositionLocalProvider(LocalMotionEnabled provides true){MaterialTheme{
+            StatefulPageTransition(page,{if(it=="root")0 else 1}){destination->
+                val state=androidx.compose.foundation.rememberScrollState()
+                if(destination=="appearance")scroll=state
+                Column(Modifier.fillMaxSize().then(Modifier.verticalScroll(state))){repeat(50){Text("$destination-$it")}}
+            }
+        }}}
+        compose.onNodeWithText("appearance-40").performScrollTo()
+        compose.runOnIdle{position=scroll.value;page="root"}
+        compose.waitForIdle()
+        compose.runOnIdle{page="appearance"}
+        compose.waitForIdle()
+        compose.runOnIdle{org.junit.Assert.assertTrue(position>0);org.junit.Assert.assertEquals(position,scroll.value)}
     }
 }

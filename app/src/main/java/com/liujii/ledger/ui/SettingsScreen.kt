@@ -52,7 +52,7 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
     val today=rememberCurrentDate()
     val fileBusy=vm.fileOperationInProgress.value
     var section by rememberSaveable { mutableStateOf<String?>(null) }
-    BackHandler(section!=null) { section=null }
+    PageBackHandler(section!=null) { section=null }
     LaunchedEffect(focusBudget){if(focusBudget){section="预算与周期账单";onBudgetFocused()}}
     val requestNotifications=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->vm.endExternalActivity();if(!granted)message="未开启通知权限，仍可在首页查看到期账单。"}
     var explainNotifications by remember { mutableStateOf(false) }
@@ -63,7 +63,8 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
         vm.beginExternalActivity()
         runCatching(action).onFailure{vm.endExternalActivity();message="无法打开系统选择器：${it.message?:"请稍后重试"}"}
     }
-    PageTransition(target=section,rank={if(it==null)0 else 1},modifier=Modifier.fillMaxSize()){visibleSection->
+    StatefulPageTransition(target=section?:"settings-root",rank={if(it=="settings-root")0 else 1},modifier=Modifier.fillMaxSize()){visibleKey->
+    val visibleSection=visibleKey.takeUnless{it=="settings-root"}
     ScreenColumn(visibleSection?:"设置",if(visibleSection==null)"把流迹调成你习惯的样子" else null){
         if(visibleSection!=null) TextButton(onClick={section=null}){Icon(Icons.Default.ChevronLeft,null);Text("返回设置")}
         if(visibleSection==null) {

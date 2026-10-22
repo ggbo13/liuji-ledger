@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -185,7 +186,9 @@ internal fun StatisticsTrendChart(series:StatisticsChartSeries){
         onDrawBehind{
             repeat(4){i->val y=size.height*i/3;drawLine(gridColor,Offset(0f,y),Offset(size.width,y),1.dp.toPx())}
             drawPath(incomePath,Mint,style=Stroke(2.5.dp.toPx()));drawPath(expensePath,Coral,style=Stroke(2.5.dp.toPx()))
-            if(dates.size<16){inc.forEachIndexed{i,v->drawCircle(Mint,3.dp.toPx(),Offset(if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1),size.height-v.toFloat()/max*size.height*.9f))};exp.forEachIndexed{i,v->drawCircle(Coral,3.dp.toPx(),Offset(if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1),size.height-v.toFloat()/max*size.height*.9f))}}
+            val radius=if(dates.size<16)3.dp.toPx() else 1.5.dp.toPx()
+            inc.forEachIndexed{i,v->drawCircle(Mint,radius,Offset(if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1),size.height-v.toFloat()/max*size.height*.9f))}
+            exp.forEachIndexed{i,v->drawCircle(Coral,radius,Offset(if(dates.size==1)size.width/2 else size.width*i/(dates.size-1).coerceAtLeast(1),size.height-v.toFloat()/max*size.height*.9f))}
         }
     }}
     var selectedIndex by remember(series) { mutableStateOf<Int?>(null) }
@@ -220,9 +223,12 @@ internal fun StatisticsTrendChart(series:StatisticsChartSeries){
             }
         }
     ){
-        Canvas(Modifier.fillMaxWidth().height(180.dp).align(Alignment.BottomCenter).then(cachedLines)){
+        Box(Modifier.fillMaxWidth().height(180.dp).align(Alignment.BottomCenter)){
+        Spacer(Modifier.matchParentSize().graphicsLayer().then(cachedLines))
+        Canvas(Modifier.matchParentSize()){
             fun point(index:Int,value:Long)=Offset(if(dates.size==1)size.width/2 else size.width*index/dates.lastIndex,size.height-(value.toFloat()/max)*size.height*.9f)
             selectedIndex?.let{i->val incomePoint=point(i,inc[i]);val expensePoint=point(i,exp[i]);drawLine(cursorColor,Offset(incomePoint.x,0f),Offset(incomePoint.x,size.height),1.5.dp.toPx());drawCircle(Mint,5.dp.toPx(),incomePoint);drawCircle(Coral,5.dp.toPx(),expensePoint)}
+        }
         }
         selectedIndex?.let{i->
             val tooltipWidth=(170*androidx.compose.ui.platform.LocalDensity.current.fontScale).dp.coerceAtMost(maxWidth)

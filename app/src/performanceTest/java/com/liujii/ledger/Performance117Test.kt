@@ -21,7 +21,7 @@ class Performance117Test {
     private val automation:UiAutomation get()=instrumentation.uiAutomation
     private val durations=ConcurrentLinkedQueue<Long>()
 
-    @Test fun tenThousandSyntheticRowsAcrossScrollingChartAndNavigation()=runBlocking {
+    @Test fun tenThousandSyntheticRowsAcrossScrollingChartAndNavigation()=runBlocking<Unit> {
         require(InstrumentationRegistry.getArguments().getString("allowSyntheticPerformanceData")=="true"){"必须显式启用合成性能夹具"}
         require(Build.HARDWARE=="ranchu"||Build.HARDWARE=="goldfish"){"仅允许专用模拟器，禁止操作用户手机数据"}
         val context=instrumentation.targetContext
@@ -55,6 +55,10 @@ class Performance117Test {
                 val directory=java.io.File(outputRoot,"performance117").apply{mkdirs()}
                 val result=JSONObject().put("version",BuildConfig.VERSION_NAME).put("hardware",Build.HARDWARE).put("api",Build.VERSION.SDK_INT).put("syntheticRows",10000).put("samples",samples)
                 directory.resolve("frames-${BuildConfig.VERSION_NAME}.json").writeText(result.toString(2))
+                for((name,id)in listOf("首页" to "home","明细" to "details","统计" to "statistics","日历" to "calendar","设置" to "settings")){
+                    tap(name);SystemClock.sleep(450)
+                    automation.takeScreenshot()?.let{bitmap->directory.resolve("${id}-${BuildConfig.VERSION_NAME}.png").outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)}}
+                }
             } finally {scenario.onActivity{window.removeOnFrameMetricsAvailableListener(listener)}}
         }
         thread.quitSafely()

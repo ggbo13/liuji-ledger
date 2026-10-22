@@ -44,6 +44,12 @@ fun themeColorScheme(preset: ThemePreset, dark: Boolean): ColorScheme {
         surfaceContainerLowest=bg,surfaceContainerLow=lerp(bg,surface,.7f),
         surfaceContainer=surface,surfaceContainerHigh=lerp(surface,accent,.065f),
         surfaceContainerHighest=lerp(surface,accent,.1f),
+        primaryFixed=lerp(Color.White,Color(preset.lightAccent),.18f),primaryFixedDim=lerp(Color.White,Color(preset.lightAccent),.30f),
+        onPrimaryFixed=DeepSlate,onPrimaryFixedVariant=DeepSlate,
+        secondaryFixed=lerp(Color.White,Color(0xFF197653),.18f),secondaryFixedDim=lerp(Color.White,Color(0xFF197653),.30f),
+        onSecondaryFixed=DeepSlate,onSecondaryFixedVariant=DeepSlate,
+        tertiaryFixed=lerp(Color.White,Color(0xFFB34840),.18f),tertiaryFixedDim=lerp(Color.White,Color(0xFFB34840),.30f),
+        onTertiaryFixed=DeepSlate,onTertiaryFixedVariant=DeepSlate,
     )
 }
 
@@ -57,5 +63,8 @@ internal fun animatedThemeColors(target: ColorScheme, enabled: Boolean): ColorSc
         background=color(target.background),onBackground=color(target.onBackground),surface=color(target.surface),onSurface=color(target.onSurface),surfaceVariant=color(target.surfaceVariant),onSurfaceVariant=color(target.onSurfaceVariant),surfaceTint=color(target.surfaceTint),
         inverseSurface=color(target.inverseSurface),inverseOnSurface=color(target.inverseOnSurface),outline=color(target.outline),outlineVariant=color(target.outlineVariant),
         surfaceDim=color(target.surfaceDim),surfaceBright=color(target.surfaceBright),surfaceContainerLowest=color(target.surfaceContainerLowest),surfaceContainerLow=color(target.surfaceContainerLow),surfaceContainer=color(target.surfaceContainer),surfaceContainerHigh=color(target.surfaceContainerHigh),surfaceContainerHighest=color(target.surfaceContainerHighest),
+        primaryFixed=color(target.primaryFixed),primaryFixedDim=color(target.primaryFixedDim),onPrimaryFixed=color(target.onPrimaryFixed),onPrimaryFixedVariant=color(target.onPrimaryFixedVariant),
+        secondaryFixed=color(target.secondaryFixed),secondaryFixedDim=color(target.secondaryFixedDim),onSecondaryFixed=color(target.onSecondaryFixed),onSecondaryFixedVariant=color(target.onSecondaryFixedVariant),
+        tertiaryFixed=color(target.tertiaryFixed),tertiaryFixedDim=color(target.tertiaryFixedDim),onTertiaryFixed=color(target.onTertiaryFixed),onTertiaryFixedVariant=color(target.onTertiaryFixedVariant),
     )
 }

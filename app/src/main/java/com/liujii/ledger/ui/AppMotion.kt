@@ -4,6 +4,7 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -11,6 +12,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -22,6 +24,18 @@ import androidx.compose.ui.unit.dp
 
 val LocalMotionEnabled=compositionLocalOf { true }
 val LocalDarkAppearance=compositionLocalOf { false }
+val LocalPageInteractive=compositionLocalOf { true }
+
+@Composable
+internal fun PageBackHandler(enabled:Boolean,onBack:()->Unit) {
+    BackHandler(enabled&&LocalPageInteractive.current,onBack=onBack)
+}
+
+@Composable
+internal fun <T:Any> StatefulPageTransition(target:T,rank:(T)->Int,modifier:Modifier=Modifier,content:@Composable (T)->Unit) {
+    val holder=rememberSaveableStateHolder()
+    PageTransition(target,rank,modifier){page->holder.SaveableStateProvider(page){content(page)}}
+}
 
 @Composable
 internal fun systemAnimationScale(): Float {
@@ -39,6 +53,7 @@ internal fun systemAnimationScale(): Float {
 @Composable
 internal fun <T> PageTransition(target: T, rank: (T)->Int, modifier: Modifier=Modifier, content: @Composable (T)->Unit) {
     val enabled=LocalMotionEnabled.current
+    val parentInteractive=LocalPageInteractive.current
     val distance=with(LocalDensity.current){48.dp.roundToPx()}
     AnimatedContent(targetState=target,modifier=modifier,transitionSpec={
         if(!enabled) EnterTransition.None togetherWith ExitTransition.None
@@ -48,11 +63,11 @@ internal fun <T> PageTransition(target: T, rank: (T)->Int, modifier: Modifier=Mo
                 (slideOutHorizontally(tween(280)){-direction*distance}+fadeOut(tween(180)))
         }.using(SizeTransform(clip=false){_,_->snap()})
     },label="页面过渡"){page->
-        val interactive=page==target
+        val interactive=parentInteractive&&page==target
         val outgoing=if(interactive)Modifier else Modifier.clearAndSetSemantics{}.pointerInput(page){
             awaitPointerEventScope{while(true)awaitPointerEvent(PointerEventPass.Initial).changes.forEach{it.consume()}}
         }
-        Box(Modifier.fillMaxSize().then(outgoing)){content(page)}
+        Box(Modifier.fillMaxSize().then(outgoing)){CompositionLocalProvider(LocalPageInteractive provides interactive){content(page)}}
     }
 }
 
