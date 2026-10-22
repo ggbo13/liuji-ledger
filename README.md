@@ -2,7 +2,7 @@
 
 用分类、账本和收支方式整理每一笔收入与支出，按统计图和日历回看记录。原生 Android 应用，默认中文、人民币，无账号、无广告、无云同步。
 
-[下载 1.1.15 APK](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.15/liuji-v1.1.15.apk) · [版本与校验值](https://github.com/ggbo13/liuji-ledger/releases/tag/v1.1.15) · [安装与测试说明](docs/RELEASE_NOTES_1.1.15.md)
+[下载 1.1.16 APK](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.16/liuji-v1.1.16.apk) · [SHA-256 校验文件](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.16/liuji-v1.1.16.apk.sha256) · [版本说明](https://github.com/ggbo13/liuji-ledger/releases/tag/v1.1.16) · [安装与测试说明](docs/RELEASE_NOTES_1.1.16.md)
 
 最低支持 **Android 8.0**。已有用户请先导出完整备份，再覆盖安装；不要先卸载旧版。
 
@@ -15,7 +15,7 @@
 - 七列月历显示每日收支，选中日期后查看、编辑流水。
 - 总预算、分类预算、周期账单及本地通知提醒。
 - 跟随系统、白天、黑夜模式；自定义图片背景与遮罩透明度。
-- 可选系统生物识别或锁屏凭据验证；JSON 备份恢复、筛选后导出 UTF-8 BOM CSV。
+- 可选系统生物识别或锁屏凭据验证；ZIP 完整备份与旧 JSON 恢复、筛选后导出 UTF-8 BOM CSV。
 
 1.1.16 新增：带背景图片与外观的 ZIP 完整备份、恢复前预览、独立保护备份和应用内备份提醒；旧 JSON v1—v3 仍可恢复。备份未经加密，包含个人记录与图片，请自行妥善保管。应用锁和系统权限不随备份迁移。
 
@@ -91,9 +91,9 @@ Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。Debug 默认签�
 
 ## 验证状态
 
-1.1.15 已于 2026-10-15 完成 Debug/Release 构建；两种变体各通过 90 项单元测试，Lint 均为 0 错误、8 条警告。界面及内存数据库仪器测试 APK 已编译。
+1.1.16 已于 2026-10-16 完成 Debug/Release 构建并发布原签名 APK；两种变体各通过 105 项单元测试。API30、API36 模拟器各通过 125 项仪器测试，均为 0 失败、0 错误、0 跳过，每个系统保存 36 张合成数据截图。远端两种变体 Lint 均为 0 错误、19 条警告；本地离线 Lint 为 0 错误、6 条警告，差异主要来自联网依赖版本检查。
 
-当时没有可用设备或模拟器，**未执行**仪器测试、真实键盘/手势、应用锁、通知重启和覆盖安装验收。编译成功不代表设备场景已经实测通过。详细结果见[版本说明](docs/RELEASE_NOTES_1.1.15.md)。
+结果见 [PR 检查报告](https://github.com/ggbo13/liuji-ledger/actions/runs/38901105985)及[安装与测试说明](docs/RELEASE_NOTES_1.1.16.md)。模拟器通过不代表所有手机场景都已验证：真机覆盖安装、系统边缘返回、应用锁、通知重启、超大图片及厂商输入法仍需验证；键盘输入的测试语义注入不等于人工敲击所有输入法。
 
 ## 设计、依赖与许可
 
