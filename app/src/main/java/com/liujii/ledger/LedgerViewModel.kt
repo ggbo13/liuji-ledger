@@ -344,7 +344,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun selectBackgroundImage(uri:Uri,done:(String?)->Unit) {
+    fun selectBackgroundImage(uri:Uri,persistPermission:Boolean=true,done:(String?)->Unit) {
         if(fileOperationInProgress.value){done("另一个文件操作正在进行，请稍候");endExternalActivity();return}
         fileOperationInProgress.value=true
         viewModelScope.launch {
@@ -355,9 +355,10 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                     val input=resolver.openInputStream(uri)?:error("无法读取所选图片，请重新选择")
                     input.use{android.graphics.BitmapFactory.decodeStream(it,null,bounds)}
                     require(bounds.outWidth>0&&bounds.outHeight>0){"所选文件不是可读取的图片"}
-                    resolver.takePersistableUriPermission(uri,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    BackgroundImages.validate(getApplication(),uri)
+                    if(persistPermission)resolver.takePersistableUriPermission(uri,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                updateAppearance{it.copy(backgroundType="image",imageUri=uri.toString())}
+                updateAppearance{it.copy(backgroundType="image",imageUri=uri.toString(),useThemeBackground=false)}
                 done(null)
             }catch(cancelled:CancellationException){throw cancelled}
             catch(error:Exception){done(error.message?:"无法使用所选图片，原背景已保留")}

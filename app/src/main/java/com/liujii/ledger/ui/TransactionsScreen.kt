@@ -30,6 +30,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -136,7 +137,7 @@ fun TransactionsScreen(vm: LedgerViewModel, onAddTransaction: () -> Unit) {
                     scope.launch{snackbarHostState.showSnackbar("无法打开文件保存位置，请重试")}
                 }
             }
-        },enabled=!fileOperationInProgress&&!choosingCsvFile){Icon(Icons.Default.IosShare,"导出筛选后的收支账目")};FilledIconButton(onClick=onAddTransaction,modifier=Modifier.size(48.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=Mint,contentColor=Color.White)){Icon(Icons.Default.Add,"记一笔")}}
+        },enabled=!fileOperationInProgress&&!choosingCsvFile){Icon(Icons.Default.IosShare,"导出筛选后的收支账目")};FilledIconButton(onClick=onAddTransaction,modifier=Modifier.size(48.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=MaterialTheme.colorScheme.primary,contentColor=MaterialTheme.colorScheme.onPrimary)){Icon(Icons.Default.Add,"记一笔")}}
         Spacer(Modifier.height(14.dp))
         OutlinedTextField(search, {search=it}, Modifier.fillMaxWidth(), placeholder={Text("搜索备注、分类或收支方式")}, leadingIcon={Icon(Icons.Default.Search,null)}, singleLine=true, shape=MaterialTheme.shapes.large)
         Row(Modifier.fillMaxWidth().padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -366,7 +367,7 @@ private fun TransactionEditorForm(vm: LedgerViewModel, existing: TransactionRow?
             TransactionNoteField(note,{note=it.take(80)},Modifier.padding(top=14.dp),enabled=!saving)
             OutlinedButton(onClick={datePicker=true},Modifier.fillMaxWidth().padding(top=14.dp),enabled=!saving){Text("日期：$date")}
             error?.let{Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.padding(top=10.dp))}
-            Button(onClick=save,enabled=valid&&!saving,modifier=Modifier.fillMaxWidth().padding(top=18.dp).heightIn(min=52.dp)){Text(if(saving)"保存中…" else "保存")}
+            PressFeedbackButton(onClick=save,enabled=valid&&!saving,modifier=Modifier.fillMaxWidth().padding(top=16.dp).heightIn(min=52.dp)){Text(if(saving)"保存中…" else "保存")}
             if(existing!=null&&!copyMode) OutlinedButton(onClick={
                 copyMode=true;amount="";date=LocalDate.now();error=null
                 categoryId=fallbackCategoryId(categories,type,categoryId)
@@ -402,11 +403,12 @@ internal fun TransactionNoteField(
 ) {
     val bringIntoViewRequester=remember{BringIntoViewRequester()}
     var focused by remember{mutableStateOf(false)}
+    var fieldHeight by remember{mutableIntStateOf(0)}
     val imeBottom=WindowInsets.ime.getBottom(LocalDensity.current)
     val keyboard=LocalSoftwareKeyboardController.current
-    LaunchedEffect(focused,imeBottom) {
+    LaunchedEffect(focused,imeBottom,fieldHeight) {
         if(focused) {
-            // 等当前帧按实际输入法高度完成布局，再将备注字段本身移入可见区域。
+            // 标签和大字体也可能改变字段高度；按当前真实尺寸重新避让，不只追踪键盘。
             withFrameNanos { }
             bringIntoViewRequester.bringIntoView()
         }
@@ -415,7 +417,8 @@ internal fun TransactionNoteField(
         value=value,
         onValueChange=onValueChange,
         modifier=modifier.fillMaxWidth().bringIntoViewRequester(bringIntoViewRequester)
-            .onFocusChanged{focused=it.isFocused},
+            .onFocusChanged{focused=it.isFocused}
+            .onSizeChanged{fieldHeight=it.height},
         enabled=enabled,
         label={Text("备注（可选）")},
         singleLine=true,

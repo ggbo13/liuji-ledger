@@ -97,11 +97,11 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 private fun LockedScreen(message:String?,onUnlock: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(MistBlue, Color(0xFFD9F1EB)))), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            Icon(Icons.Default.Lock, null, tint = DeepSlate, modifier = Modifier.size(48.dp))
-            Text("流迹已锁定", style = MaterialTheme.typography.headlineSmall, color = DeepSlate)
-            message?.let { Text(it,Modifier.padding(horizontal=32.dp),color=DeepSlate.copy(alpha=.75f),style=MaterialTheme.typography.bodyMedium) }
+            Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
+            Text("流迹已锁定", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            message?.let { Text(it,Modifier.padding(horizontal=32.dp),color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.bodyMedium) }
             Button(onClick = onUnlock) { Text("验证并进入") }
         }
     }
@@ -110,7 +110,7 @@ private fun LockedScreen(message:String?,onUnlock: () -> Unit) {
 private data class NavItem(val label: String, val icon: ImageVector)
 
 @Composable
-private fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutConsumed:()->Unit) {
+internal fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutConsumed:()->Unit) {
     var page by rememberSaveable { mutableIntStateOf(0) }
     var addingType by rememberSaveable { mutableStateOf<com.liujii.ledger.data.MoneyType?>(null) }
     var addingEditorSession by rememberSaveable { mutableLongStateOf(0) }
@@ -135,21 +135,20 @@ private fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutCon
         if(shortcutAction!=null)onShortcutConsumed()
     }
     Background(settings) {
-        if(showAccounts) {
-            BooksScreen(vm,onBack={showAccounts=false})
-        } else {
-        screenState.SaveableStateProvider(page) {
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
+                if(!showAccounts)NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
                     items.forEachIndexed { index, item -> NavigationBarItem(selected=page==index, onClick={page=index}, icon={Icon(item.icon, item.label)}, label={Text(item.label)}) }
                 }
             },
-            floatingActionButton = { if(page < 4 && page != 1) FloatingActionButton(onClick={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE}, containerColor=Mint, contentColor=Color.White) { Icon(Icons.Default.Add, "快速记账") } },
+            floatingActionButton = { if(!showAccounts&&page < 4 && page != 1) FloatingActionButton(onClick={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE}, containerColor=MaterialTheme.colorScheme.primary, contentColor=MaterialTheme.colorScheme.onPrimary) { Icon(Icons.Default.Add, "快速记账") } },
         ) { padding ->
-            Box(Modifier.padding(padding).fillMaxSize()) {
-                when(page) {
+            // 过渡层自身避开导航区域，离场页的触摸屏蔽也只能覆盖页面内容。
+            PageTransition(target=if(showAccounts)5 else page,rank={it},modifier=Modifier.fillMaxSize().padding(if(showAccounts)PaddingValues(0.dp)else padding)) { destination ->
+            screenState.SaveableStateProvider(destination) {
+            if(destination==5)BooksScreen(vm,onBack={showAccounts=false}) else Box(Modifier.fillMaxSize()) {
+                when(destination) {
                     0 -> HomeScreen(vm, onSeeAll={page=1}, onManageBudget={focusBudget=true;page=4},onManageAccounts={showAccounts=true})
                     1 -> TransactionsScreen(vm,onAddTransaction={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE})
                     2 -> StatsScreen(vm)
@@ -157,8 +156,8 @@ private fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutCon
                     else -> SettingsScreen(vm, focusBudget=focusBudget, onBudgetFocused={focusBudget=false},onManageAccounts={showAccounts=true})
                 }
             }
-        }
-        }
+            }
+            }
         }
     }
     addingType?.let { type ->

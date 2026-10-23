@@ -207,6 +207,8 @@ class FullBackupManager(private val context: Context, private val repo: LedgerRe
     private fun encodeAppearance(value: AppearanceSettings) = JSONObject()
         .put("themeMode", value.themeMode).put("backgroundType", value.backgroundType)
         .put("colorStart", value.colorStart).put("colorEnd", value.colorEnd).put("overlayAlpha", value.overlayAlpha.toDouble())
+        .put("themeId",themePreset(value.themeId).id).put("useThemeBackground",value.useThemeBackground)
+        .put("motionEnabled",value.motionEnabled)
 
     private fun decodeAppearance(value: JSONObject, image: File?): AppearanceSettings {
         val theme = value.getString("themeMode")
@@ -217,7 +219,9 @@ class FullBackupManager(private val context: Context, private val repo: LedgerRe
         require(theme in setOf("system", "light", "dark") && background in setOf("gradient", "image")) { "备份外观类型无效" }
         require(alpha.isFinite() && alpha in .45f..1f && start in 0..0xFFFFFFFFL && end in 0..0xFFFFFFFFL) { "备份颜色或遮罩数值无效" }
         require((background == "image") == (image != null)) { "备份背景图片与外观设置不一致" }
-        return AppearanceSettings(theme, background, start, end, image?.let { Uri.fromFile(it).toString() }, alpha)
+        return AppearanceSettings(theme, background, start, end, image?.let { Uri.fromFile(it).toString() }, alpha,
+            themeId=themePreset(value.optString("themeId","mint")).id,
+            useThemeBackground=value.optBoolean("useThemeBackground",false),motionEnabled=value.optBoolean("motionEnabled",true))
     }
 
     private fun writeArchive(payload: BackupPayload, appearance: AppearanceSettings, image: File?, output: OutputStream, stage: File) {

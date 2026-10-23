@@ -52,7 +52,7 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
     val today=rememberCurrentDate()
     val fileBusy=vm.fileOperationInProgress.value
     var section by rememberSaveable { mutableStateOf<String?>(null) }
-    BackHandler(section!=null) { section=null }
+    PageBackHandler(section!=null) { section=null }
     LaunchedEffect(focusBudget){if(focusBudget){section="预算与周期账单";onBudgetFocused()}}
     val requestNotifications=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->vm.endExternalActivity();if(!granted)message="未开启通知权限，仍可在首页查看到期账单。"}
     var explainNotifications by remember { mutableStateOf(false) }
@@ -63,9 +63,11 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
         vm.beginExternalActivity()
         runCatching(action).onFailure{vm.endExternalActivity();message="无法打开系统选择器：${it.message?:"请稍后重试"}"}
     }
-    ScreenColumn(if(section==null)"设置" else section!!,if(section==null)"把流迹调成你习惯的样子" else null){
-        if(section!=null) TextButton(onClick={section=null}){Icon(Icons.Default.ChevronLeft,null);Text("返回设置")}
-        if(section==null) {
+    StatefulPageTransition(target=section?:"settings-root",rank={if(it=="settings-root")0 else 1},modifier=Modifier.fillMaxSize()){visibleKey->
+    val visibleSection=visibleKey.takeUnless{it=="settings-root"}
+    ScreenColumn(visibleSection?:"设置",if(visibleSection==null)"把流迹调成你习惯的样子" else null){
+        if(visibleSection!=null) TextButton(onClick={section=null}){Icon(Icons.Default.ChevronLeft,null);Text("返回设置")}
+        if(visibleSection==null) {
             GlassCard(Modifier.fillMaxWidth()) {
                 SettingAction(Icons.Default.Palette,"外观"){section="外观"}
                 HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.35f))
@@ -78,28 +80,39 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
                 SettingAction(Icons.Default.Security,"隐私与数据"){section="隐私与数据"}
             }
         }
-        if(section=="外观") {
+        if(visibleSection=="外观") {
         SectionHeader("外观");GlassCard(Modifier.fillMaxWidth()){
             Text("显示模式");ThemeChoices(vm)
-            Text("背景",modifier=Modifier.padding(top=8.dp));Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedButton({vm.updateAppearance{it.copy(backgroundType="gradient",colorStart=0xFFEAF1F7,colorEnd=0xFFD9F1EB)}},enabled=!fileBusy,contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp)){Text("清透渐变",maxLines=1,softWrap=false)};OutlinedButton({launchExternal{pickImage.launch(arrayOf("image/*"))}},enabled=!fileBusy,contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp)){Icon(Icons.Default.Image,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("本地图片",maxLines=1,softWrap=false)}}
+            Text("官方主题",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=16.dp,bottom=12.dp))
+            OfficialThemeGallery(vm.appearance.value,enabled=!fileBusy){id->vm.updateAppearance{com.liujii.ledger.data.selectThemePreset(it,id)}}
+            Text("背景与遮罩",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=24.dp,bottom=12.dp))
+            BackgroundChoices(vm.appearance.value,!fileBusy,
+                onThemeBackground={vm.updateAppearance{com.liujii.ledger.data.selectThemePreset(it,it.themeId)}},
+                onPickImage={launchExternal{pickImage.launch(arrayOf("image/*"))}},
+                onRestoreImage={vm.appearance.value.imageUri?.let{uri->vm.selectBackgroundImage(android.net.Uri.parse(uri),persistPermission=false){failure->message=failure}}})
             Text("背景遮罩 ${kotlin.math.round(vm.appearance.value.overlayAlpha*100).toInt()}%",color=MaterialTheme.colorScheme.onSurfaceVariant);Slider(vm.appearance.value.overlayAlpha,{a->vm.updateAppearance{it.copy(overlayAlpha=a)}},valueRange=.45f..1f,enabled=!fileBusy)
+            HorizontalDivider(Modifier.padding(vertical=12.dp))
+            Row(Modifier.fillMaxWidth().heightIn(min=48.dp),verticalAlignment=Alignment.CenterVertically){
+                Column(Modifier.weight(1f).padding(end=12.dp)){Text("界面动效");Text("页面过渡与主题换色，遵循系统动画设置",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
+                Switch(vm.appearance.value.motionEnabled,{value->vm.updateAppearance{it.copy(motionEnabled=value)}},enabled=!fileBusy)
+            }
         }
         }
-        if(section=="账本与收支方式") {
+        if(visibleSection=="账本与收支方式") {
         Spacer(Modifier.height(20.dp));SectionHeader("账本","管理",onManageAccounts);GlassCard(Modifier.fillMaxWidth()){
             SettingAction(Icons.Default.Book,"${accounts.size} 个启用账本",onClick=onManageAccounts)
             Text("按日常、工作或特定项目整理账目；收支方式在记账时选择。",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
         PaymentMethodsSettings(vm)
         }
-        if(section=="分类") {
+        if(visibleSection=="分类") {
         Spacer(Modifier.height(20.dp));SectionHeader("分类","新增"){showNewCategory=true}
         Text("收入与支出独立排序。点分类可编辑，按住右侧手柄上下拖动；停用后仍保留历史账目。",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(bottom=10.dp))
         CategorySortCard("支出分类",MoneyType.EXPENSE,categories,vm,{categoryDialog=it})
         Spacer(Modifier.height(12.dp))
         CategorySortCard("收入分类",MoneyType.INCOME,categories,vm,{categoryDialog=it})
         }
-        if(section=="预算与周期账单") {
+        if(visibleSection=="预算与周期账单") {
         Spacer(Modifier.height(20.dp));Column(Modifier.bringIntoViewRequester(budgetRequester)){SectionHeader("本月预算","添加"){budgetDialog=true};GlassCard(Modifier.fillMaxWidth()){
             val current=budgets.filter{it.yearMonth==java.time.YearMonth.from(today).toString()};if(current.isEmpty())Text("还没有预算",color=MaterialTheme.colorScheme.onSurfaceVariant)
             current.forEach { b ->
@@ -118,7 +131,7 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
             recurring.forEach{r->val processing=vm.isProcessing("recurring-${r.id}");Row(Modifier.fillMaxWidth().clickable(enabled=!processing){recurringDialog=r}.padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(r.title);Text("${if(r.repeatType==RepeatType.MONTHLY)"每月" else "每周"} · ${dateText(r.nextAt)}${if(!r.active)" · 已暂停" else ""}${if(processing)" · 处理中…"else""}",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)};Switch(r.active,{vm.setRecurringActive(r,it){failure->message=failure}},enabled=!processing);IconButton({actionError=null;deletingRecurring=r},enabled=!processing){Icon(Icons.Default.Delete,"删除周期账单")}}}
         }
         }
-        if(section=="隐私与数据") {
+        if(visibleSection=="隐私与数据") {
         Spacer(Modifier.height(20.dp));SectionHeader("隐私与数据");GlassCard(Modifier.fillMaxWidth()){
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("应用锁");Text("使用指纹、人脸或系统凭据",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)};Switch(vm.appearance.value.appLockEnabled,{v->if(v&&!context.getSystemService(android.app.KeyguardManager::class.java).isDeviceSecure)message="请先在手机设置中配置系统锁屏或生物识别。" else vm.updateAppearance{it.copy(appLockEnabled=v)}})}
             HorizontalDivider(Modifier.padding(vertical=10.dp));FullBackupSettings(vm);HorizontalDivider(Modifier.padding(vertical=10.dp));SettingAction(Icons.Default.TableView,"导出全部收支 CSV",enabled=!fileBusy){launchExternal{createCsv.launch("流迹账目-$today.csv")}}
@@ -126,6 +139,7 @@ fun SettingsScreen(vm: LedgerViewModel, focusBudget:Boolean=false, onBudgetFocus
         }
         }
         Spacer(Modifier.height(18.dp));Text("流迹 ${BuildConfig.VERSION_NAME} · 数据仅保存在本机",color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.bodySmall)
+    }
     }
     if(showNewCategory)CategoryDialog(vm,null){showNewCategory=false};categoryDialog?.let{editing->CategoryDialog(vm,editing){categoryDialog=null}};if(budgetDialog)BudgetDialog(vm,categories){budgetDialog=false};if(showNewRecurring)RecurringDialog(vm,categories,null){showNewRecurring=false};recurringDialog?.let{rule->RecurringDialog(vm,categories,rule){recurringDialog=null}}
     message?.let{AlertDialog(onDismissRequest={message=null},confirmButton={TextButton({message=null}){Text("知道了")}},title={Text("提示")},text={Text(it)})}
@@ -277,7 +291,7 @@ private fun CategorySortCard(
             TextButton(onClick={showDisabled=!showDisabled}, modifier=Modifier.heightIn(min=48.dp)) {
                 Text("已停用（${disabledCategories.size}）${if(showDisabled)" · 收起"else" · 展开"}")
             }
-            if (showDisabled) disabledCategories.forEach { category ->
+            AnimatedGroup(showDisabled) { disabledCategories.forEach { category ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
                     Text(category.name, Modifier.weight(1f), maxLines=1, overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis, color=MaterialTheme.colorScheme.onSurfaceVariant)
                     val processing=vm.isProcessing("category-active-${category.id}")
@@ -285,7 +299,7 @@ private fun CategorySortCard(
                         Text(if(processing)"处理中…"else"启用", maxLines=1)
                     }
                 }
-            }
+            } }
         }
         if (pendingDisable == null) error?.let { Text(it, color=MaterialTheme.colorScheme.error) }
     }

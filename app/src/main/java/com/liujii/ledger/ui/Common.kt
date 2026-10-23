@@ -36,9 +36,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import com.liujii.ledger.data.resolveBackgroundColors
 
-private data class BackgroundImage(val bitmap:android.graphics.Bitmap?,val failed:Boolean=false)
-private val backgroundCache by lazy { object:android.util.LruCache<String,BackgroundImage>(16*1024*1024){override fun sizeOf(key:String,value:BackgroundImage)=value.bitmap?.allocationByteCount?:1} }
+private typealias BackgroundImage = com.liujii.ledger.data.BackgroundImage
 
 @Composable
 fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
@@ -46,14 +48,19 @@ fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
     val windowSize = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize
     val targetWidth = windowSize.width.coerceAtLeast(1)
     val targetHeight = windowSize.height.coerceAtLeast(1)
+    val dark=LocalDarkAppearance.current
+    val gradient=resolveBackgroundColors(settings,dark)
+    val animatedGradient=key(dark){
+        val start by animateColorAsState(Color(gradient.first),tween(if(LocalMotionEnabled.current)250 else 0),label="背景起色")
+        val end by animateColorAsState(Color(gradient.second),tween(if(LocalMotionEnabled.current)250 else 0),label="背景终色")
+        start to end
+    }
+    val gradientStart=animatedGradient.first
+    val gradientEnd=animatedGradient.second
     val backgroundImage by produceState(BackgroundImage(null),settings.imageUri,targetWidth,targetHeight,settings.backgroundType) {
         val uri=settings.imageUri
         if(settings.backgroundType=="image"&&uri!=null) {
-            val key="$uri-${targetWidth.toInt()}-${targetHeight.toInt()}"
-            value=backgroundCache.get(key)?:withContext(Dispatchers.IO){
-                val bitmap=loadSampledBackground(context,Uri.parse(uri),targetWidth.toInt(),targetHeight.toInt())
-                BackgroundImage(bitmap,bitmap==null).also{if(bitmap!=null)backgroundCache.put(key,it)}
-            }
+            value=withContext(Dispatchers.IO){com.liujii.ledger.data.BackgroundImages.load(context,Uri.parse(uri),targetWidth,targetHeight)}
         } else value=BackgroundImage(null)
     }
     val loadedBitmap=backgroundImage.bitmap
@@ -61,9 +68,9 @@ fun Background(settings: AppearanceSettings, content: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize()) {
         if (settings.backgroundType == "image" && settings.imageUri != null) {
             if (loadedBitmap != null) Image(loadedBitmap.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale=ContentScale.Crop)
-            else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(settings.colorStart), Color(settings.colorEnd)))))
+            else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(gradientStart,gradientEnd))))
         } else {
-            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(settings.colorStart), Color(settings.colorEnd)))))
+            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(gradientStart,gradientEnd))))
         }
         val alpha=com.liujii.ledger.data.backgroundOverlayAlpha(settings.overlayAlpha)
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background.copy(alpha=alpha)))
@@ -86,7 +93,7 @@ private fun loadSampledBackground(context: android.content.Context, uri: Uri, ta
 
 @Composable
 fun ScreenColumn(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=20.dp).padding(top=22.dp, bottom=100.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=20.dp).padding(top=24.dp, bottom=100.dp)) {
         Text(title, style=MaterialTheme.typography.headlineMedium, fontWeight=FontWeight.Bold)
         if(subtitle != null) Text(subtitle, color=MaterialTheme.colorScheme.onSurfaceVariant, modifier=Modifier.padding(top=3.dp, bottom=18.dp)) else Spacer(Modifier.height(18.dp))
         content()
@@ -95,7 +102,7 @@ fun ScreenColumn(title: String, subtitle: String? = null, content: @Composable C
 
 @Composable
 fun GlassCard(modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(18.dp), content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha=.91f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha=.30f), RoundedCornerShape(22.dp)).padding(contentPadding)) {
+    Column(modifier.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha=.91f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha=.30f), RoundedCornerShape(20.dp)).padding(contentPadding)) {
         // 半透明卡片同样要提供 onSurface，避免黑夜模式继承到默认黑色。
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
             content()

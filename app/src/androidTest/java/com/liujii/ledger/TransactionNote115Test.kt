@@ -180,7 +180,7 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         assertTrue("备注左边界超出视区", field.left >= viewport.left - 1.dp)
         assertTrue("备注右边界超出视区", field.right <= viewport.right + 1.dp)
         assertTrue("备注上边界超出视区", field.top >= viewport.top - 1.dp)
-        assertTrue("备注下边界超出视区", field.bottom <= viewport.bottom + 1.dp)
+        assertTrue("备注下边界超出视区：字段=$field，视区=$viewport", field.bottom <= viewport.bottom + 1.dp)
     }
 
     private fun realImeBottom(): Int = compose.runOnUiThread {
