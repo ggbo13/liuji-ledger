@@ -1,0 +1,32 @@
+{
+  "version": "1.1.17",
+  "hardware": "ranchu",
+  "api": 30,
+  "syntheticRows": 10000,
+  "samples": [
+    {
+      "scene": "明细滚动",
+      "frames": 190,
+      "p50Ms": 72.72115,
+      "p95Ms": 155.115912,
+      "over16_67Ms": 190,
+      "elapsedMs": 11033
+    },
+    {
+      "scene": "图表拖动",
+      "frames": 153,
+      "p50Ms": 90.651334,
+      "p95Ms": 167.192079,
+      "over16_67Ms": 153,
+      "elapsedMs": 9372
+    },
+    {
+      "scene": "页面切换",
+      "frames": 78,
+      "p50Ms": 168.71466,
+      "p95Ms": 269.954931,
+      "over16_67Ms": 78,
+      "elapsedMs": 10773
+    }
+  ]
+}
