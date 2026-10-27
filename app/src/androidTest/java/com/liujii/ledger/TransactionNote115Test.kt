@@ -113,14 +113,18 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
     }
 
     @Test fun focusingOffscreenNoteAndEnteringTextKeepsEntireFieldInsideScrollViewport() {
-        // 此用例隔离聚焦滚动；真实键盘的出现、输入与避让由下一个独立用例验证。
-        compose.runOnUiThread {compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)}
+        // 使用正常输入窗口验证聚焦滚动，不通过浮层窗口标志阻断输入法连接。
+        // 真实键盘的出现、输入与避让由下一个独立用例验证。
         setNoteFixture()
         val field = compose.onNodeWithTag("备注输入")
         field.assertIsNotDisplayed()
         // 直接请求焦点，不先替组件滚动；输入走 Compose 编辑语义，不宣称是真实键盘敲击。
         field.performSemanticsAction(SemanticsActions.RequestFocus) { assertTrue(it()) }
         field.assertIsFocused()
+        compose.runOnUiThread {
+            val window=compose.activity.window
+            WindowCompat.getInsetsController(window,window.decorView).hide(WindowInsetsCompat.Type.ime())
+        }
         waitForFieldInsideViewport()
         assertFieldInsideViewport()
         field.performTextInput("周末杂货与车费")
@@ -168,7 +172,7 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         compose.waitUntil(timeoutMillis=5000L) {
             val field=compose.onNodeWithTag("备注输入").getUnclippedBoundsInRoot()
             val viewport=compose.onNodeWithTag("备注可视区域").getUnclippedBoundsInRoot()
-            field.bottom>field.top&&viewport.bottom>viewport.top&&
+            realImeBottom()==0&&field.bottom>field.top&&viewport.bottom>viewport.top&&
                 field.left>=viewport.left-1.dp&&field.right<=viewport.right+1.dp&&
                 field.top>=viewport.top-1.dp&&field.bottom<=viewport.bottom+1.dp
         }
