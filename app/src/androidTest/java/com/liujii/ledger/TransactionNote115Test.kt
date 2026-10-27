@@ -112,9 +112,8 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         }
     }
 
-    @Test fun focusingOffscreenNoteAndEnteringTextKeepsEntireFieldInsideScrollViewport() {
-        // 使用正常输入窗口验证聚焦滚动，不通过浮层窗口标志阻断输入法连接。
-        // 真实键盘的出现、输入与避让由下一个独立用例验证。
+    @Test fun programmaticFocusAndRealKeyboardKeepOffscreenNoteVisible() {
+        // 程序聚焦和触摸聚焦都在正常输入窗口验证，避免用浮层标志改变IME连接。
         setNoteFixture()
         val field = compose.onNodeWithTag("备注输入")
         field.assertIsNotDisplayed()
@@ -123,13 +122,18 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         field.assertIsFocused()
         compose.runOnUiThread {
             val window=compose.activity.window
-            WindowCompat.getInsetsController(window,window.decorView).hide(WindowInsetsCompat.Type.ime())
+            WindowCompat.getInsetsController(window,window.decorView).show(WindowInsetsCompat.Type.ime())
         }
+        val requestedAt=SystemClock.elapsedRealtime()
+        compose.waitUntil(timeoutMillis=6000L){realImeBottom()>0||SystemClock.elapsedRealtime()-requestedAt>=5000L}
+        assumeTrue("当前设备未展示真实键盘，跳过程序聚焦后的IME验证",realImeBottom()>0)
+        waitForFieldAboveRealIme()
         waitForFieldInsideViewport()
         assertFieldInsideViewport()
         field.performTextInput("周末杂货与车费")
         field.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("周末杂货与车费")))
         field.assertIsFocused()
+        waitForFieldAboveRealIme()
         waitForFieldInsideViewport()
         assertFieldInsideViewport()
         compose.runOnIdle { assertTrue("聚焦屏外备注应带动父表单滚动", formScroll.value > 0) }
@@ -172,7 +176,7 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         compose.waitUntil(timeoutMillis=5000L) {
             val field=compose.onNodeWithTag("备注输入").getUnclippedBoundsInRoot()
             val viewport=compose.onNodeWithTag("备注可视区域").getUnclippedBoundsInRoot()
-            realImeBottom()==0&&field.bottom>field.top&&viewport.bottom>viewport.top&&
+            realImeBottom()>0&&field.bottom>field.top&&viewport.bottom>viewport.top&&
                 field.left>=viewport.left-1.dp&&field.right<=viewport.right+1.dp&&
                 field.top>=viewport.top-1.dp&&field.bottom<=viewport.bottom+1.dp
         }
