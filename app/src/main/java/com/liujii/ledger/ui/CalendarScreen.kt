@@ -33,7 +33,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 @Composable
-fun CalendarScreen(vm: LedgerViewModel){
+fun CalendarScreen(vm: LedgerViewModel, onAdd: (() -> Unit)? = null){
     val all by vm.transactions.collectAsState();val transfers by vm.transfers.collectAsState();var month by rememberSaveable{mutableStateOf(YearMonth.now())};var selected by rememberSaveable{mutableStateOf(LocalDate.now())}
     var editingRow by remember { mutableStateOf<com.liujii.ledger.data.TransactionRow?>(null) }
     val today=rememberCurrentDate()
@@ -44,7 +44,7 @@ fun CalendarScreen(vm: LedgerViewModel){
     val selectedTransfers=remember(transfers,selected,zone){transfers.filter{dateOf(it.occurredAt)==selected}}
     val selectedEntries=remember(selectedRows,selectedTransfers){(selectedRows.map{it.occurredAt to it}+selectedTransfers.map{it.occurredAt to it}).sortedByDescending{it.first}}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(start=20.dp,end=20.dp,top=24.dp,bottom=100.dp)) {
-        item(key="heading"){Text("日历",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold);Text("按天回看收支节奏",color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(top=4.dp,bottom=16.dp))}
+        item(key="heading"){LedgerPageHeading("日历","按天回看收支节奏",onAdd);Spacer(Modifier.height(16.dp))}
         item(key="month"){
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("${month.year} 年 ${month.monthValue} 月",Modifier.weight(1f),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold);TextButton({month=YearMonth.from(today);selected=today}){Text("今天",maxLines=1)}}
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){IconButton({month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,"上个月")};IconButton({month=month.plusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronRight,"下个月")}}
@@ -87,7 +87,7 @@ internal fun CalendarMonthGrid(month:YearMonth,selected:LocalDate,totalsByDate:M
     // 七列只分配现有宽度，大字体不再把星期日推到屏幕外。
     Column(modifier.fillMaxWidth()) {
             Row(Modifier.fillMaxWidth()){listOf("一","二","三","四","五","六","日").forEach{Text(it,Modifier.weight(1f),textAlign=TextAlign.Center,color=MaterialTheme.colorScheme.onSurfaceVariant,maxLines=1,softWrap=false,lineHeight=1.25.em,autoSize=TextAutoSize.StepBased(minFontSize=with(density){8.dp.toSp()},maxFontSize=14.sp,stepSize=.25.sp))}}
-            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(Modifier.padding(vertical=8.dp),color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.5f))
             weeks.forEach{week->
                 Row(Modifier.fillMaxWidth()){
                     week.forEach{d->

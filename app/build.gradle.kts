@@ -17,8 +17,8 @@ android {
         applicationId = "com.liujii.ledger"
         minSdk = 26
         targetSdk = 36
-        versionCode = 25
-        versionName = "1.1.17"
+        versionCode = 26
+        versionName = "1.1.18"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

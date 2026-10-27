@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 val LocalMotionEnabled=compositionLocalOf { true }
 val LocalDarkAppearance=compositionLocalOf { false }
 val LocalPageInteractive=compositionLocalOf { true }
+val LocalTransactionSaved=compositionLocalOf<()->Unit> { {} }
 
 @Composable
 internal fun PageBackHandler(enabled:Boolean,onBack:()->Unit) {
@@ -54,13 +55,13 @@ internal fun systemAnimationScale(): Float {
 internal fun <T> PageTransition(target: T, rank: (T)->Int, modifier: Modifier=Modifier, content: @Composable (T)->Unit) {
     val enabled=LocalMotionEnabled.current
     val parentInteractive=LocalPageInteractive.current
-    val distance=with(LocalDensity.current){48.dp.roundToPx()}
+    val distance=with(LocalDensity.current){28.dp.roundToPx()}
     AnimatedContent(targetState=target,modifier=modifier,transitionSpec={
         if(!enabled) EnterTransition.None togetherWith ExitTransition.None
         else {
             val direction=if(rank(targetState)>=rank(initialState))1 else -1
-            (slideInHorizontally(tween(280)){direction*distance}+fadeIn(tween(280))) togetherWith
-                (slideOutHorizontally(tween(280)){-direction*distance}+fadeOut(tween(180)))
+            (slideInHorizontally(tween(260)){direction*distance}+fadeIn(tween(260))) togetherWith
+                (slideOutHorizontally(tween(260)){-direction*distance}+fadeOut(tween(180)))
         }.using(SizeTransform(clip=false){_,_->snap()})
     },label="页面过渡"){page->
         val interactive=parentInteractive&&page==target
@@ -76,7 +77,7 @@ internal fun PressFeedbackButton(onClick:()->Unit,enabled:Boolean=true,modifier:
     val source=remember{MutableInteractionSource()}
     val pressed by source.collectIsPressedAsState()
     val motion=LocalMotionEnabled.current
-    val scale by animateFloatAsState(if(pressed&&motion).98f else 1f,tween(if(motion)100 else 0),label="按钮按压")
+    val scale by animateFloatAsState(if(pressed&&motion).98f else 1f,tween(if(motion)120 else 0),label="按钮按压")
     Button(onClick,modifier.graphicsLayer{scaleX=scale;scaleY=scale}.heightIn(min=48.dp),enabled=enabled,interactionSource=source,content=content)
 }
 

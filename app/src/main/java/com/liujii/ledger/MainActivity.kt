@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -119,7 +120,10 @@ internal fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutCo
     val screenState=rememberSaveableStateHolder()
     val accounts by vm.accounts.collectAsState()
     val settings = vm.appearance.value
-    val items = listOf(NavItem("首页", Icons.Default.Home), NavItem("明细", Icons.AutoMirrored.Filled.ReceiptLong), NavItem("统计", Icons.AutoMirrored.Filled.ShowChart), NavItem("日历", Icons.Default.CalendarMonth), NavItem("设置", Icons.Default.Tune))
+    val items = listOf(LedgerTab("首页", Icons.Default.Home), LedgerTab("明细", Icons.AutoMirrored.Filled.ReceiptLong), LedgerTab("统计", Icons.AutoMirrored.Filled.ShowChart), LedgerTab("日历", Icons.Default.CalendarMonth), LedgerTab("设置", Icons.Default.Tune))
+    val savedFeedback=remember{SnackbarHostState()}
+    val scope=rememberCoroutineScope()
+    val openNewEntry={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE}
     BackHandler(enabled=showAccounts || page!=0) {
         when {
             showAccounts -> showAccounts=false
@@ -134,25 +138,24 @@ internal fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutCo
         }
         if(shortcutAction!=null)onShortcutConsumed()
     }
+    CompositionLocalProvider(LocalTransactionSaved provides {scope.launch{savedFeedback.currentSnackbarData?.dismiss();savedFeedback.showSnackbar("已保存账目")};Unit}) {
     Background(settings) {
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                if(!showAccounts)NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
-                    items.forEachIndexed { index, item -> NavigationBarItem(selected=page==index, onClick={page=index}, icon={Icon(item.icon, item.label)}, label={Text(item.label)}) }
-                }
+                if(!showAccounts)LedgerNavigation(items,page){page=it}
             },
-            floatingActionButton = { if(!showAccounts&&page < 4 && page != 1) FloatingActionButton(onClick={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE}, containerColor=MaterialTheme.colorScheme.primary, contentColor=MaterialTheme.colorScheme.onPrimary) { Icon(Icons.Default.Add, "快速记账") } },
+            snackbarHost={SnackbarHost(savedFeedback){data->Snackbar(Modifier.padding(horizontal=20.dp).padding(bottom=8.dp),containerColor=MaterialTheme.colorScheme.primaryContainer,contentColor=MaterialTheme.colorScheme.onPrimaryContainer){Row(verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Check,null,Modifier.size(20.dp));Spacer(Modifier.width(8.dp));Text(data.visuals.message)}}}},
         ) { padding ->
             // 过渡层自身避开导航区域，离场页的触摸屏蔽也只能覆盖页面内容。
             PageTransition(target=if(showAccounts)5 else page,rank={it},modifier=Modifier.fillMaxSize().padding(if(showAccounts)PaddingValues(0.dp)else padding)) { destination ->
             screenState.SaveableStateProvider(destination) {
             if(destination==5)BooksScreen(vm,onBack={showAccounts=false}) else Box(Modifier.fillMaxSize()) {
                 when(destination) {
-                    0 -> HomeScreen(vm, onSeeAll={page=1}, onManageBudget={focusBudget=true;page=4},onManageAccounts={showAccounts=true})
+                    0 -> HomeScreen(vm, onSeeAll={page=1}, onManageBudget={focusBudget=true;page=4},onManageAccounts={showAccounts=true},onAdd=openNewEntry)
                     1 -> TransactionsScreen(vm,onAddTransaction={addingEditorSession++;addingType=com.liujii.ledger.data.MoneyType.EXPENSE})
-                    2 -> StatsScreen(vm)
-                    3 -> CalendarScreen(vm)
+                    2 -> StatsScreen(vm,onAdd=openNewEntry)
+                    3 -> CalendarScreen(vm,onAdd=openNewEntry)
                     else -> SettingsScreen(vm, focusBudget=focusBudget, onBudgetFocused={focusBudget=false},onManageAccounts={showAccounts=true})
                 }
             }
@@ -165,4 +168,5 @@ internal fun LedgerApp(vm: LedgerViewModel, shortcutAction:String?, onShortcutCo
         key(session){TransactionEditor(vm=vm,initialType=type,onDismiss={if(addingEditorSession==session)addingType=null})}
     }
     vm.operationNotice.value?.let{message->AlertDialog(onDismissRequest={vm.operationNotice.value=null},title={Text("提示")},text={Text(message)},confirmButton={TextButton(onClick={vm.operationNotice.value=null}){Text("知道了")}})}
+    }
 }

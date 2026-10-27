@@ -56,7 +56,7 @@ private const val LEGACY_ASSET_REPORT_ENABLED=false
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun StatsScreen(vm: LedgerViewModel) {
+fun StatsScreen(vm: LedgerViewModel, onAdd: (() -> Unit)? = null) {
     val all by vm.transactions.collectAsState()
     val categories by vm.categories.collectAsState()
     val accounts by vm.accounts.collectAsState()
@@ -77,15 +77,15 @@ fun StatsScreen(vm: LedgerViewModel) {
     val previousSummary=remember(all,previousStart,previousEnd,zone){statisticsSummary(all,previousStart,previousEnd,zone)}
     val previousIncome=previousSummary.incomeCents
     val previousExpense=previousSummary.expenseCents
-    ScreenColumn("统计", "看清钱的来路与去处") {
+    ScreenColumn("统计", "看清钱的来路与去处",onAdd=onAdd) {
         Row(Modifier.fillMaxWidth().padding(bottom=12.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Period.entries.forEach { p ->
                 Surface(
                     selected=period==p,
                     onClick={period=p},
                     modifier=Modifier.weight(1f).heightIn(min=48.dp),
-                    shape=RoundedCornerShape(16.dp),
-                    color=if(period==p)MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent,
+                    shape=RoundedCornerShape(topStart=5.dp,topEnd=12.dp,bottomStart=5.dp,bottomEnd=5.dp),
+                    color=if(period==p)MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent,
                     contentColor=MaterialTheme.colorScheme.onSurface,
                     border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant),
                 ) {

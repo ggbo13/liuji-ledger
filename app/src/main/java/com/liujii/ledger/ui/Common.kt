@@ -92,17 +92,18 @@ private fun loadSampledBackground(context: android.content.Context, uri: Uri, ta
 }.getOrNull()
 
 @Composable
-fun ScreenColumn(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
+fun ScreenColumn(title: String, subtitle: String? = null, onAdd: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=20.dp).padding(top=24.dp, bottom=100.dp)) {
-        Text(title, style=MaterialTheme.typography.headlineMedium, fontWeight=FontWeight.Bold)
-        if(subtitle != null) Text(subtitle, color=MaterialTheme.colorScheme.onSurfaceVariant, modifier=Modifier.padding(top=3.dp, bottom=18.dp)) else Spacer(Modifier.height(18.dp))
+        LedgerPageHeading(title, subtitle, onAdd)
+        Spacer(Modifier.height(18.dp))
         content()
     }
 }
 
 @Composable
 fun GlassCard(modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(18.dp), content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha=.91f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha=.30f), RoundedCornerShape(20.dp)).padding(contentPadding)) {
+    val shape=RoundedCornerShape(topStart=8.dp,topEnd=20.dp,bottomEnd=20.dp,bottomStart=20.dp)
+    Column(modifier.clip(shape).background(MaterialTheme.colorScheme.surface.copy(alpha=.91f)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha=.40f), shape).padding(contentPadding)) {
         // 半透明卡片同样要提供 onSurface，避免黑夜模式继承到默认黑色。
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
             content()
