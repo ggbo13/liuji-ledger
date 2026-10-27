@@ -3,6 +3,12 @@ set -uo pipefail
 
 # 模拟器只安装测试包；截图中的金额、分类和背景均来自合成夹具。
 adb shell settings put secure show_ime_with_hard_keyboard 1
+# 先在刚启动的模拟器验证程序聚焦和触摸聚焦，失败立即保留报告，不等整套界面用例。
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.liujii.ledger.TransactionNote115Test --no-daemon --max-workers=2
+task_focus_result=$?
+if [[ "$task_focus_result" -ne 0 ]]; then
+  exit "$task_focus_result"
+fi
 ./gradlew :app:connectedDebugAndroidTest --no-daemon --max-workers=2
 task_result=$?
 mkdir -p app/build/reports/visual116

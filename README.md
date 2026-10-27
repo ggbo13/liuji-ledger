@@ -2,7 +2,7 @@
 
 用分类、账本和收支方式整理每一笔收入与支出，按统计图和日历回看记录。原生 Android 应用，默认中文、人民币，无账号、无广告、无云同步。
 
-[下载 1.1.17 APK](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.17/liuji-v1.1.17.apk) · [SHA-256 校验文件](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.17/liuji-v1.1.17.apk.sha256) · [版本说明](https://github.com/ggbo13/liuji-ledger/releases/tag/v1.1.17) · [安装与测试说明](docs/RELEASE_NOTES_1.1.17.md)
+[下载 1.1.18 APK](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.18/liuji-v1.1.18.apk) · [SHA-256 校验文件](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.18/liuji-v1.1.18.apk.sha256) · [版本说明](https://github.com/ggbo13/liuji-ledger/releases/tag/v1.1.18) · [安装与测试说明](docs/RELEASE_NOTES_1.1.18.md)
 
 最低支持 **Android 8.0**。已有用户请先导出完整备份，再覆盖安装；不要先卸载旧版。
 
@@ -18,7 +18,9 @@
 - 页面方向过渡、主题换色和折叠动效，可在外观设置关闭，并遵循系统动画设置。
 - 可选系统生物识别或锁屏凭据验证；ZIP 完整备份与旧 JSON 恢复、筛选后导出 UTF-8 BOM CSV。
 
-1.1.17 更新：官方主题预览与明确选中标记、恢复上次图片、完整明暗语义配色、页面状态隔离，以及图表路径缓存和日历长流水懒加载。选择主题会应用配套渐变，但不改变当前显示模式或遮罩；原图片仅在本机保留，不额外打包进未使用图片的备份。
+1.1.18 更新：A+「活页账本」原生界面、月份账页、收支分栏、20格预算刻度、顶部快速记账与滑动书签导航；新图标采用「账页与书签」。页面过渡为28dp/260ms，底栏书签220ms，可关闭动效；草稿、系统返回、图表手势与原有数据关联继续保留。修正同日切换时区后的近期账单刷新及RTL书签位置。
+
+1.1.17 加入的四套官方主题、恢复上次图片、完整明暗语义配色、页面状态隔离、图表路径缓存和日历长流水懒加载继续保留。选择主题会应用配套渐变，但不改变当前显示模式或遮罩；原图片仅在本机保留，不额外打包进未使用图片的备份。
 
 1.1.16 加入的带背景图片与外观 ZIP 完整备份、恢复前预览、独立保护备份和应用内备份提醒继续保留；旧 JSON v1—v3 仍可恢复。备份未经加密，包含个人记录与图片，请自行妥善保管。应用锁和系统权限不随备份迁移。
 
@@ -30,7 +32,14 @@
 
 应用没有联网权限。图片、备份和导出文件由系统选择器处理；你选择的文件提供方可能有自己的联网行为。本仓库不含个人账本、私有背景图片或发布签名密钥。
 
-下面为模拟器实际运行的主题选择器，使用合成夹具，不包含个人账目或私人图片。测试中的记录不是随应用预装的账目。
+下面均为安卓模拟器运行截图，使用合成夹具，不包含个人账目或私人图片。测试中的记录不是随应用预装的账目。
+
+<details>
+<summary>查看 1.1.18 活页账本与新图标</summary>
+
+<img src="docs/images/home-1.1.18-light.png" width="260" alt="A+活页账本白天首页，显示月份、收支、预算刻度及最近流水，金额为合成测试数据"> <img src="docs/images/home-1.1.18-dark.png" width="260" alt="A+活页账本黑夜首页，文字与收支使用明暗语义颜色，金额为合成测试数据"> <img src="docs/images/launcher-1.1.18.png" width="120" alt="深薄荷底、纸白账页、人民币和金色书签组成的新图标">
+
+</details>
 
 <details>
 <summary>查看白天／黑夜官方主题预览</summary>
@@ -65,7 +74,7 @@ docs/              # 版本、验证与安装说明
 ```bash
 git clone https://github.com/ggbo13/liuji-ledger.git
 cd liuji-ledger
-git switch --detach v1.1.17
+git switch --detach v1.1.18
 
 # macOS / Linux
 ./gradlew :app:assembleDebug
@@ -83,7 +92,7 @@ Windows PowerShell 使用：
 
 Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。Debug 默认签名与正式发布包不同，不能直接覆盖正式版；不要为安装 Debug 包而卸载日常使用的正式版。
 
-1.1.17 对应源码以 `v1.1.17` 标签为准，开发改动见 [PR #2](https://github.com/ggbo13/liuji-ledger/pull/2)。PR 不自动合并，默认分支的发布文档更新不等于已合并应用源码。
+1.1.18 对应源码以 `v1.1.18` 标签为准，开发改动见 [PR #3](https://github.com/ggbo13/liuji-ledger/pull/3)，依赖1.1.17的 [PR #2](https://github.com/ggbo13/liuji-ledger/pull/2)。PR 不自动合并，默认分支的发布文档更新不等于已合并应用源码。
 
 在独立测试设备或模拟器上运行仪器测试：
 
@@ -103,6 +112,12 @@ Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。Debug 默认签�
 然后运行 `./gradlew :app:assembleRelease`；Windows 使用 `.\gradlew.bat :app:assembleRelease`。自有签名生成的包不能覆盖本项目 Releases 中使用原签名的安装包。不要把密码写入仓库或提交历史。
 
 ## 验证状态
+
+1.1.18 于2026-10-27完成Debug／原签名Release构建；两种变体各114项单元测试通过，API30、API36各203项数据库及界面测试通过，均为0失败、0错误、0跳过。包含真实软键盘的程序聚焦与触摸聚焦、首页12组小屏／大字／明暗布局，以及48组官方主题选择器矩阵。远端两种变体Lint均为0错误、21条警告，本地为0错误、8条警告。
+
+结果见[1.1.18最终检查](https://github.com/ggbo13/liuji-ledger/actions/runs/40469618847)及[安装与测试说明](docs/RELEASE_NOTES_1.1.18.md)。同机一万笔合成数据的模拟器性能记录没有证明整体帧耗时改善，图表拖动和切页仍需实体设备复核；不承诺真机帧率。真机覆盖安装、厂商输入法、桌面裁切、边缘返回和系统权限场景未执行。
+
+以下保留1.1.17历史验证记录：
 
 1.1.17 于 2026-10-23 完成 Debug／原签名Release构建；两种变体各114项单元测试通过，API30、API36各183项仪器测试通过，均为0失败、0错误、0跳过。每个系统保存48张主题选择器矩阵截图及36张原有视觉回归截图。远端两种变体Lint均为0错误、21条警告，本地为0错误、8条警告，差异主要来自联网依赖版本检查。
 

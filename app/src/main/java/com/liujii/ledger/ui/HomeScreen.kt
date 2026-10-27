@@ -41,7 +41,8 @@ import java.time.YearMonth
 import java.time.ZoneId
 
 @Composable
-fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> Unit, onManageAccounts: () -> Unit) {
+// 保留上一版首页供改版对照，不再作为应用入口。
+private fun PreviousHomeScreen118(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> Unit, onManageAccounts: () -> Unit) {
     val all by vm.transactions.collectAsState()
     val accounts by vm.accounts.collectAsState()
     val transfers by vm.transfers.collectAsState()
@@ -138,13 +139,13 @@ private data class RecentMovement(val at:Long,val transaction:TransactionRow?,va
 @Composable private fun SummaryItem(label:String, amount:Long, color:Color, modifier:Modifier) { Column(modifier) { Text(label, color=MaterialTheme.colorScheme.onSurfaceVariant); Text(money(amount), color=color, fontWeight=FontWeight.Bold) } }
 
 @Composable
-private fun CashTrail(values: List<Long>) {
+internal fun CashTrail(values: List<Long>, compact: Boolean = false) {
     val mint = Mint
     val coral = Coral
     val trendColor = MaterialTheme.colorScheme.onSurfaceVariant
     val max = remember(values) { values.maxOfOrNull { kotlin.math.abs(it) }?.coerceAtLeast(1) ?: 1L }
-    Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
-        Text("每日净额趋势", style=MaterialTheme.typography.labelLarge, fontWeight=FontWeight.SemiBold, modifier=Modifier.weight(1f))
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
+        Text("每日净额趋势", style=MaterialTheme.typography.labelLarge, fontWeight=FontWeight.SemiBold)
         Text("收入 − 支出", style=MaterialTheme.typography.labelSmall, color=MaterialTheme.colorScheme.onSurfaceVariant)
     }
     Spacer(Modifier.height(8.dp))
@@ -153,19 +154,19 @@ private fun CashTrail(values: List<Long>) {
             Text("暂无每日收支数据", style=MaterialTheme.typography.bodySmall, color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
     } else {
-        Canvas(Modifier.fillMaxWidth().height(56.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(if(compact)32.dp else 56.dp)) {
             val path = Path()
             values.forEachIndexed { i, value ->
                 val x = if(values.size == 1) size.width/2 else size.width*i/(values.size-1)
                 val y = size.height/2 - (value.toFloat()/max)*size.height*.34f
                 if(i==0) path.moveTo(x,y) else path.lineTo(x,y)
-                drawCircle(if(value>=0) mint else coral, 4.dp.toPx(), Offset(x,y))
+                drawCircle(if(value>=0) mint else coral, (if(compact)2.dp else 4.dp).toPx(), Offset(x,y))
             }
             if(values.size>1) drawPath(path, color=trendColor.copy(alpha=.8f), style=androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawLine(trendColor.copy(alpha=.25f), Offset(0f,size.height/2), Offset(size.width,size.height/2), 1.dp.toPx())
         }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(12.dp)) {
         Text("● 收入较多", color=MaterialTheme.colorScheme.secondary, style=MaterialTheme.typography.labelSmall)
         Text("● 支出较多", color=MaterialTheme.colorScheme.tertiary, style=MaterialTheme.typography.labelSmall)
         Text("— 收支平衡线", color=trendColor, style=MaterialTheme.typography.labelSmall)

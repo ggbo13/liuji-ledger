@@ -112,20 +112,28 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
         }
     }
 
-    @Test fun focusingOffscreenNoteAndEnteringTextKeepsEntireFieldInsideScrollViewport() {
-        // 此用例隔离聚焦滚动；真实键盘的出现、输入与避让由下一个独立用例验证。
-        compose.runOnUiThread {compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)}
+    @Test fun programmaticFocusAndRealKeyboardKeepOffscreenNoteVisible() {
+        // 程序聚焦和触摸聚焦都在正常输入窗口验证，避免用浮层标志改变IME连接。
         setNoteFixture()
         val field = compose.onNodeWithTag("备注输入")
         field.assertIsNotDisplayed()
         // 直接请求焦点，不先替组件滚动；输入走 Compose 编辑语义，不宣称是真实键盘敲击。
         field.performSemanticsAction(SemanticsActions.RequestFocus) { assertTrue(it()) }
         field.assertIsFocused()
+        compose.runOnUiThread {
+            val window=compose.activity.window
+            WindowCompat.getInsetsController(window,window.decorView).show(WindowInsetsCompat.Type.ime())
+        }
+        val requestedAt=SystemClock.elapsedRealtime()
+        compose.waitUntil(timeoutMillis=6000L){realImeBottom()>0||SystemClock.elapsedRealtime()-requestedAt>=5000L}
+        assumeTrue("当前设备未展示真实键盘，跳过程序聚焦后的IME验证",realImeBottom()>0)
+        waitForFieldAboveRealIme()
         waitForFieldInsideViewport()
         assertFieldInsideViewport()
         field.performTextInput("周末杂货与车费")
         field.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("周末杂货与车费")))
         field.assertIsFocused()
+        waitForFieldAboveRealIme()
         waitForFieldInsideViewport()
         assertFieldInsideViewport()
         compose.runOnIdle { assertTrue("聚焦屏外备注应带动父表单滚动", formScroll.value > 0) }
@@ -163,13 +171,14 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
     }
 
     private fun waitForFieldInsideViewport() {
-        // 系统 IME 动画不受 Compose 空闲状态控制，按真实边界等待，不替组件手动滚动。
+        // 与最终断言读取同一份同步后的布局，避免位置回调缓存先于Insets重排达标。
+        // 保留完整边界要求，不替组件手动滚动，也不以延长固定等待掩盖遮挡。
         compose.waitUntil(timeoutMillis=5000L) {
-            compose.runOnUiThread {
-                fieldWindowBounds.height>0f&&viewportWindowBounds.height>0f&&
-                    fieldWindowBounds.left>=viewportWindowBounds.left-1f&&fieldWindowBounds.right<=viewportWindowBounds.right+1f&&
-                    fieldWindowBounds.top>=viewportWindowBounds.top-1f&&fieldWindowBounds.bottom<=viewportWindowBounds.bottom+1f
-            }
+            val field=compose.onNodeWithTag("备注输入").getUnclippedBoundsInRoot()
+            val viewport=compose.onNodeWithTag("备注可视区域").getUnclippedBoundsInRoot()
+            realImeBottom()>0&&field.bottom>field.top&&viewport.bottom>viewport.top&&
+                field.left>=viewport.left-1.dp&&field.right<=viewport.right+1.dp&&
+                field.top>=viewport.top-1.dp&&field.bottom<=viewport.bottom+1.dp
         }
     }
 
