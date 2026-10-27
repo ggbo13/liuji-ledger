@@ -5,6 +5,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -46,7 +50,9 @@ class Ledger118VisualTest(private val width:Int,private val scale:Float,private 
                 DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(scale)){
                     val settings=AppearanceSettings(themeMode=if(dark)"dark"else"light",motionEnabled=false)
                     LiuJiTheme(settings){Background(settings){
-                        Scaffold(containerColor=androidx.compose.ui.graphics.Color.Transparent,bottomBar={LedgerNavigation(listOf("首页","明细","统计","日历","设置").map{LedgerTab(it,Icons.Default.Home)},0,{})}){padding->Box(Modifier.padding(padding)){
+                        Scaffold(containerColor=androidx.compose.ui.graphics.Color.Transparent,bottomBar={LedgerNavigation(listOf(
+                            LedgerTab("首页",Icons.Default.Home),LedgerTab("明细",Icons.AutoMirrored.Filled.ReceiptLong),LedgerTab("统计",Icons.AutoMirrored.Filled.ShowChart),
+                            LedgerTab("日历",Icons.Default.CalendarMonth),LedgerTab("设置",Icons.Default.Tune)),0,{})}){padding->Box(Modifier.padding(padding)){
                         LedgerHomeContent(day,summary,listOf(-1000,5000,-2490),BudgetEntity(1,"2026-10",null,600000),
                             rows.map{it.occurredAt to it},2,emptyList(),emptySet(),{},{managed=true},{},{added=true},{edited=it.id},{})
                         }}

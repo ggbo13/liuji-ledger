@@ -163,13 +163,14 @@ class TransactionNote115Test(private val width: Int, private val fontScale: Floa
     }
 
     private fun waitForFieldInsideViewport() {
-        // 系统 IME 动画不受 Compose 空闲状态控制，按真实边界等待，不替组件手动滚动。
+        // 与最终断言读取同一份同步后的布局，避免位置回调缓存先于Insets重排达标。
+        // 保留完整边界要求，不替组件手动滚动，也不以延长固定等待掩盖遮挡。
         compose.waitUntil(timeoutMillis=5000L) {
-            compose.runOnUiThread {
-                fieldWindowBounds.height>0f&&viewportWindowBounds.height>0f&&
-                    fieldWindowBounds.left>=viewportWindowBounds.left-1f&&fieldWindowBounds.right<=viewportWindowBounds.right+1f&&
-                    fieldWindowBounds.top>=viewportWindowBounds.top-1f&&fieldWindowBounds.bottom<=viewportWindowBounds.bottom+1f
-            }
+            val field=compose.onNodeWithTag("备注输入").getUnclippedBoundsInRoot()
+            val viewport=compose.onNodeWithTag("备注可视区域").getUnclippedBoundsInRoot()
+            field.bottom>field.top&&viewport.bottom>viewport.top&&
+                field.left>=viewport.left-1.dp&&field.right<=viewport.right+1.dp&&
+                field.top>=viewport.top-1.dp&&field.bottom<=viewport.bottom+1.dp
         }
     }
 
