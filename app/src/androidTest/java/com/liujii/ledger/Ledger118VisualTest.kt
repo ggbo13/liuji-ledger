@@ -3,6 +3,8 @@ package com.liujii.ledger
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -44,8 +46,10 @@ class Ledger118VisualTest(private val width:Int,private val scale:Float,private 
                 DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(scale)){
                     val settings=AppearanceSettings(themeMode=if(dark)"dark"else"light",motionEnabled=false)
                     LiuJiTheme(settings){Background(settings){
+                        Scaffold(containerColor=androidx.compose.ui.graphics.Color.Transparent,bottomBar={LedgerNavigation(listOf("首页","明细","统计","日历","设置").map{LedgerTab(it,Icons.Default.Home)},0,{})}){padding->Box(Modifier.padding(padding)){
                         LedgerHomeContent(day,summary,listOf(-1000,5000,-2490),BudgetEntity(1,"2026-10",null,600000),
                             rows.map{it.occurredAt to it},2,emptyList(),emptySet(),{},{managed=true},{},{added=true},{edited=it.id},{})
+                        }}
                     }}
                 }
             }
@@ -53,6 +57,16 @@ class Ledger118VisualTest(private val width:Int,private val scale:Float,private 
         compose.onNodeWithText("本月结余").assertIsDisplayed()
         compose.onNodeWithContentDescription("记一笔").assertIsDisplayed().performClick()
         compose.runOnIdle{assertTrue(added)}
+        val balance=compose.onNodeWithText(money(summary.incomeCents-summary.expenseCents),useUnmergedTree=true)
+        balance.assertIsDisplayed()
+        val balanceLayouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        balance.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(balanceLayouts)}
+        assertTrue(balanceLayouts.isNotEmpty());balanceLayouts.forEach{assertVisibleTextFits(it)}
+        if(scale==1f) {
+            val first=compose.onNode(hasText("午餐") and hasClickAction()).assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+            val nav=compose.onNode(hasText("首页") and isSelectable()).fetchSemanticsNode().boundsInRoot
+            assertTrue("首屏完整露出至少一笔流水",first.bottom<=nav.top)
+        }
         capture()
         compose.onNodeWithText("管理").performScrollTo().performClick()
         compose.runOnIdle{assertTrue(managed)}

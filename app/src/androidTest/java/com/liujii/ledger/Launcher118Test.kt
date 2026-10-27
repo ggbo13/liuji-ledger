@@ -16,7 +16,10 @@ class Launcher118Test {
         val bitmap=Bitmap.createBitmap(256,256,Bitmap.Config.ARGB_8888)
         launcher.setBounds(0,0,256,256)
         launcher.draw(Canvas(bitmap))
-        assertTrue("自适应图标应包含可见账页",Color.alpha(bitmap.getPixel(128,128))>0)
+        val launcherPixels=IntArray(256*256)
+        bitmap.getPixels(launcherPixels,0,256,0,0,256,256)
+        val visiblePagePixels=launcherPixels.count{Color.alpha(it)>200&&Color.red(it)>210&&Color.green(it)>210&&Color.blue(it)>180}
+        assertTrue("自适应图标应包含纸白账页，只有背景不能通过",visiblePagePixels>2000)
         capture(bitmap,"launcher")
         val mono=context.getDrawable(R.drawable.ic_launcher_monochrome)!!
         val monoBitmap=Bitmap.createBitmap(256,256,Bitmap.Config.ARGB_8888)

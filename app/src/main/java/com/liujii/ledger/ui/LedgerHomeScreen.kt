@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +22,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.liujii.ledger.LedgerViewModel
@@ -45,7 +49,7 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
             .let { it.income.zip(it.expense) { income, expense -> income - expense } }
     }
     val budget = remember(budgets, month) { budgets.lastOrNull { it.yearMonth == month.toString() && it.categoryId == null } }
-    val upcoming = remember(recurring, today) { recurring.filter { it.isEffective() && dateOf(it.nextAt) <= today.plusDays(7) }.sortedBy { it.nextAt }.take(3) }
+    val upcoming = rememberHomeUpcomingRules(recurring, today, zone)
     val recent = remember(all, transfers) {
         (all.map { it.occurredAt to it } + transfers.map { it.occurredAt to it }).sortedByDescending { it.first }.take(5)
     }
@@ -62,6 +66,13 @@ fun HomeScreen(vm: LedgerViewModel, onSeeAll: () -> Unit, onManageBudget: () -> 
         confirmButton = { TextButton(onClick = { message = null }) { Text("知道了") } }) }
 }
 
+@Composable
+internal fun rememberHomeUpcomingRules(rules:List<RecurringRuleEntity>,today:LocalDate,zone:ZoneId):List<RecurringRuleEntity> =
+    remember(rules,today,zone) {
+        rules.filter { it.isEffective() && java.time.Instant.ofEpochMilli(it.nextAt).atZone(zone).toLocalDate() <= today.plusDays(7) }
+            .sortedBy { it.nextAt }.take(3)
+    }
+
 /** 纯展示层也用于合成截图测试，不需要接触用户数据库。 */
 @Composable
 internal fun LedgerHomeContent(today:LocalDate,summary:StatisticsSummary,trail:List<Long>,budget:BudgetEntity?,
@@ -71,12 +82,15 @@ internal fun LedgerHomeContent(today:LocalDate,summary:StatisticsSummary,trail:L
     val month=YearMonth.from(today)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 18.dp, bottom = 32.dp)) {
         Column(Modifier.padding(horizontal = 20.dp)) {
-            LedgerPageHeading("流迹", "每一笔，都有去处", onAdd)
-            TextButton(onClick = onManageAccounts, contentPadding = PaddingValues(0.dp), modifier = Modifier.heightIn(min = 48.dp)) {
-                Icon(Icons.Default.Book, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("我的账本 · $bookCount 个", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Icon(Icons.Default.ChevronRight, null, Modifier.size(16.dp))
+            Row(Modifier.fillMaxWidth().padding(bottom=12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("流迹",Modifier.weight(1f),style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
+                TextButton(onClick=onManageAccounts,contentPadding=PaddingValues(horizontal=8.dp),
+                    modifier=Modifier.heightIn(min=48.dp).semantics{contentDescription="管理账本，已启用$bookCount 个"}) {
+                    Icon(Icons.Default.Book,null,Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("账本",maxLines=1)
+                }
+                FilledIconButton(onAdd,Modifier.size(48.dp),shape=CircleShape) { Icon(Icons.Default.Add,"记一笔") }
             }
             LedgerPaper(Modifier.fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -90,8 +104,11 @@ internal fun LedgerHomeContent(today:LocalDate,summary:StatisticsSummary,trail:L
                 }
                 HorizontalDivider(Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
                 Box(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-                    Text("¥", Modifier.align(Alignment.CenterEnd).clearAndSetSemantics {}, color = MaterialTheme.colorScheme.primary.copy(alpha = .045f),
-                        fontSize = 84.sp, fontWeight = FontWeight.Light)
+                    // 淡纹只负责绘制，不参加摘要的高度测量。
+                    Box(Modifier.matchParentSize(),contentAlignment=Alignment.CenterEnd) {
+                        Text("¥", Modifier.clearAndSetSemantics {}, color = MaterialTheme.colorScheme.primary.copy(alpha = .045f),
+                            fontSize = 84.sp, fontWeight = FontWeight.Light)
+                    }
                     Column {
                         Text("本月结余", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(money(summary.incomeCents - summary.expenseCents), style = MaterialTheme.typography.headlineLarge,
@@ -107,7 +124,7 @@ internal fun LedgerHomeContent(today:LocalDate,summary:StatisticsSummary,trail:L
             Spacer(Modifier.height(12.dp))
             SectionHeader("本月预算", "管理", onManageBudget)
             if (budget == null) {
-                TextButton(onClick = onManageBudget, contentPadding = PaddingValues(0.dp)) { Text("设置预算，给消费留一点余地") }
+                Text("尚未设置总预算",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 val remaining = budget.limitCents - summary.expenseCents
                 val pace = remember(summary.expenseCents, budget.limitCents, today) { budgetPace(summary.expenseCents, budget.limitCents, today) }

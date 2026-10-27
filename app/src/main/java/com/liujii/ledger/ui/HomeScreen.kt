@@ -144,8 +144,8 @@ internal fun CashTrail(values: List<Long>, compact: Boolean = false) {
     val coral = Coral
     val trendColor = MaterialTheme.colorScheme.onSurfaceVariant
     val max = remember(values) { values.maxOfOrNull { kotlin.math.abs(it) }?.coerceAtLeast(1) ?: 1L }
-    Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
-        Text("每日净额趋势", style=MaterialTheme.typography.labelLarge, fontWeight=FontWeight.SemiBold, modifier=Modifier.weight(1f))
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
+        Text("每日净额趋势", style=MaterialTheme.typography.labelLarge, fontWeight=FontWeight.SemiBold)
         Text("收入 − 支出", style=MaterialTheme.typography.labelSmall, color=MaterialTheme.colorScheme.onSurfaceVariant)
     }
     Spacer(Modifier.height(8.dp))
@@ -160,7 +160,7 @@ internal fun CashTrail(values: List<Long>, compact: Boolean = false) {
                 val x = if(values.size == 1) size.width/2 else size.width*i/(values.size-1)
                 val y = size.height/2 - (value.toFloat()/max)*size.height*.34f
                 if(i==0) path.moveTo(x,y) else path.lineTo(x,y)
-                drawCircle(if(value>=0) mint else coral, 4.dp.toPx(), Offset(x,y))
+                drawCircle(if(value>=0) mint else coral, (if(compact)2.dp else 4.dp).toPx(), Offset(x,y))
             }
             if(values.size>1) drawPath(path, color=trendColor.copy(alpha=.8f), style=androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
             drawLine(trendColor.copy(alpha=.25f), Offset(0f,size.height/2), Offset(size.width,size.height/2), 1.dp.toPx())

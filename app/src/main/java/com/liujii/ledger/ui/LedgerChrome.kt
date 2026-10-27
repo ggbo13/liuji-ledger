@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -94,16 +96,20 @@ internal fun LedgerNavigation(tabs: List<LedgerTab>, selected: Int, onSelect: (I
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
             BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp)) {
                 val tabWidth = maxWidth / tabs.size
-                val target = tabWidth * selected
+                val rtl=LocalLayoutDirection.current==LayoutDirection.Rtl
+                val target = tabWidth * (if(rtl)tabs.lastIndex-selected else selected)
                 val left by animateDpAsState(target, tween(if (LocalMotionEnabled.current) 220 else 0), label = "书签滑动")
                 val bookmarkColor=MaterialTheme.colorScheme.primaryContainer
                 val bookmarkLine=MaterialTheme.colorScheme.primary.copy(alpha=.2f)
+                val bookmarkMark=MaterialTheme.colorScheme.primary
                 Canvas(Modifier.matchParentSize()) {
                     val origin=androidx.compose.ui.geometry.Offset(left.toPx(),0f)
                     val area=androidx.compose.ui.geometry.Size(tabWidth.toPx(),size.height)
                     val radius=androidx.compose.ui.geometry.CornerRadius(12.dp.toPx())
                     drawRoundRect(bookmarkColor,origin,area,radius)
                     drawRoundRect(bookmarkLine,origin,area,radius,style=androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                    drawRoundRect(bookmarkMark,androidx.compose.ui.geometry.Offset(origin.x+(area.width-18.dp.toPx())/2,4.dp.toPx()),
+                        androidx.compose.ui.geometry.Size(18.dp.toPx(),3.dp.toPx()),androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()))
                 }
                 Row(Modifier.fillMaxWidth().selectableGroup()) {
                     tabs.forEachIndexed { index, tab ->
