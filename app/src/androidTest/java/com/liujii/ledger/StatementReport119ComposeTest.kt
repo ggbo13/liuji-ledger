@@ -5,11 +5,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -89,7 +91,8 @@ class StatementReport119ComposeTest {
         }
         compose.onNodeWithText("2026 年 11 月").assertIsDisplayed()
         compose.onNodeWithText(money(summary.incomeCents)).assertIsDisplayed()
-        compose.onNodeWithText(money(-summary.expenseCents)).assertIsDisplayed()
+        // 支出金额会同时出现在总览和流水中，两处都应完整显示。
+        compose.onAllNodesWithText(money(-summary.expenseCents)).assertCountEquals(2)
         compose.onNodeWithContentDescription("上一个月").performClick()
         compose.runOnIdle { assertEquals(1,previous) }
         val list=compose.onNode(hasScrollAction())
