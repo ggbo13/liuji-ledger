@@ -1,3 +1,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M18,59C30,30 42,78 55,49C68,20 79,71 92,39L92,47C79,79 68,28 55,57C42,86 30,38 18,67ZM27,26h8v14h-8zM73,69h8v14h-8z" />
+    <!-- 单色模式保留账页外形和人民币笔画，不依赖背景色表达符号。 -->
+    <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="4" android:strokeLineJoin="round" android:pathData="M27,24h49a4,4 0,0 1,4 4v48a4,4 0,0 1,-4 4H27zM35,25v54"/>
+        <path android:fillColor="#FFFFFF" android:pathData="M65,24h8v20l-4,-3 -4,3z"/>
+        <path android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="3.6" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M44,42l9,10 9,-10M53,52v17M44,56h18M44,63h18"/>
+    </group>
 </vector>

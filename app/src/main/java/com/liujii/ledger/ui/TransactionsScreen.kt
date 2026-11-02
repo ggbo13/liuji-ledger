@@ -211,7 +211,7 @@ private fun DaySummaryHeader(day: LocalDate, entries: List<DetailEntry>,today:Lo
     val rows=remember(entries){entries.mapNotNull { (it as? DetailEntry.Transaction)?.row }}
     val income=remember(rows){rows.filter { it.type==MoneyType.INCOME }.sumOf { it.amountCents }}
     val expense=remember(rows){rows.filter { it.type==MoneyType.EXPENSE }.sumOf { it.amountCents }}
-    Column(Modifier.fillMaxWidth().padding(horizontal=20.dp).padding(top=14.dp,bottom=7.dp)) {
+    Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=.65f)).padding(horizontal=20.dp).padding(top=12.dp,bottom=10.dp)) {
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
         Text(day.format(DateTimeFormatter.ofPattern(if(day.year==today.year)"M月d日 E"else"yyyy年M月d日",java.util.Locale.CHINA)),style=MaterialTheme.typography.titleSmall,fontWeight=androidx.compose.ui.text.font.FontWeight.SemiBold,modifier=Modifier.weight(1f))
         Text("结余 ${money(income-expense)}",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
@@ -332,15 +332,22 @@ private fun TransactionEditorForm(vm: LedgerViewModel, existing: TransactionRow?
             vm.submitTransaction(submissionId,if(copyMode)0 else existing?.id?:0,type,amount,categoryId,accountId,paymentMethodId,date,note)
         }
     }
-    LaunchedEffect(submission.saved){if(submission.saved)onDismiss()}
+    val reportSaved by rememberUpdatedState(LocalTransactionSaved.current)
+    LaunchedEffect(submission.saved){if(submission.saved){reportSaved();onDismiss()}}
     LaunchedEffect(submission.error){submission.error?.let{error=it}}
-    ModalBottomSheet(onDismissRequest=requestClose,sheetState=sheetState) {
+    ModalBottomSheet(onDismissRequest=requestClose,sheetState=sheetState,
+        shape=RoundedCornerShape(topStart=10.dp,topEnd=24.dp),containerColor=MaterialTheme.colorScheme.surface) {
         BackHandler(!datePicker&&!confirmClose){requestClose()}
         Column(
             Modifier.fillMaxWidth().imePadding().verticalScroll(formScroll)
                 .padding(horizontal=22.dp).padding(bottom=24.dp)
         ) {
             Text(if(existing==null||copyMode) "记一笔" else "编辑账目", style=MaterialTheme.typography.headlineSmall)
+            Row(Modifier.fillMaxWidth().padding(top=8.dp,bottom=8.dp),horizontalArrangement=Arrangement.SpaceBetween){
+                Text("入账单",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("$date",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.5f))
             if(draftRestored)Text("已恢复暂存草稿",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
             if(existing==null&&storedDraft!=null&&!draftRestored&&!dirty)Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
                 Text("有一份暂存草稿",Modifier.weight(1f),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)

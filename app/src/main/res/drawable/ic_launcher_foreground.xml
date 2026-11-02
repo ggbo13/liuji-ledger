@@ -1,5 +1,11 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#253442" android:pathData="M0,0h108v108h-108z"/>
-    <path android:fillColor="#2FAE83" android:pathData="M18,59C30,30 42,78 55,49C68,20 79,71 92,39L92,47C79,79 68,28 55,57C42,86 30,38 18,67Z"/>
-    <path android:fillColor="#F9FBFC" android:pathData="M27,26h8v14h-8zM73,69h8v14h-8z"/>
+    <!-- 账页、人民币和书签集中在裁切安全区，背景由自适应图标单独提供。 -->
+    <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="54" android:pivotY="54">
+        <path android:fillColor="#163E33" android:pathData="M29,30h54v57H29z"/>
+        <path android:fillColor="#C7D8C8" android:pathData="M26,25h52v57H26z"/>
+        <path android:fillColor="#F5F6E9" android:pathData="M24,22h52a5,5 0,0 1,5 5v49a5,5 0,0 1,-5 5H24z"/>
+        <path android:fillColor="#B3C7B7" android:pathData="M24,22h8v59h-8z"/>
+        <path android:fillColor="#E3B867" android:pathData="M64,22h9v24l-4.5,-3 -4.5,3z"/>
+        <path android:fillColor="@android:color/transparent" android:strokeColor="#244F43" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M43,40l9,11 9,-11M52,51v16M43,54h18M43,61h18"/>
+    </group>
 </vector>

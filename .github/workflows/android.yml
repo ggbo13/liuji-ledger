@@ -116,6 +116,7 @@ jobs:
             app/build/reports/visual116/
             app/build/outputs/connected_android_test_additional_output/**/visual116/*.png
             app/build/outputs/connected_android_test_additional_output/**/visual117/*.png
+            app/build/outputs/connected_android_test_additional_output/**/visual118/*.png
           retention-days: 7
           if-no-files-found: ignore
       - name: 汇总设备实测结果
@@ -144,7 +145,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: v1.1.16
+          ref: v1.1.17
           path: baseline117
           persist-credentials: false
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
