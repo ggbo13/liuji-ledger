@@ -2,7 +2,7 @@
 
 用分类、账本和收支方式整理每一笔收入与支出，按统计图和日历回看记录。原生 Android 应用，默认中文、人民币，无账号、无广告、无云同步。
 
-[下载 1.1.18 APK](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.18/liuji-v1.1.18.apk) · [SHA-256 校验文件](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.18/liuji-v1.1.18.apk.sha256) · [版本说明](https://github.com/ggbo13/liuji-ledger/releases/tag/v1.1.18) · [安装与测试说明](docs/RELEASE_NOTES_1.1.18.md)
+[下载 1.1.19 APK](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.19/liuji-v1.1.19.apk) · [SHA-256 校验文件](https://github.com/ggbo13/liuji-ledger/releases/download/v1.1.19/liuji-v1.1.19.apk.sha256) · [版本说明](https://github.com/ggbo13/liuji-ledger/releases/tag/v1.1.19) · [安装与测试说明](docs/RELEASE_NOTES_1.1.19.md)
 
 最低支持 **Android 8.0**。已有用户请先导出完整备份，再覆盖安装；不要先卸载旧版。
 
@@ -12,11 +12,14 @@
 - 分类支持七色标识、收入/支出独立拖动排序、停用及重新启用；记账时多行显示并遵循手动顺序。
 - 用日常、工作或项目等“账本”区分记录范围；现金、微信、支付宝、银行卡等作为“收支方式”。
 - 周、月、年收支双折线图，按住并左右拖动查看日期、收入与支出，分类可点开明细。
+- 统计页新增月总账单和年总账单；可切换上一个、下一个周期，查看完整收入、支出、结余、笔数、分类汇总及可编辑流水。
 - 七列月历显示每日收支，选中日期后查看、编辑流水。
 - 总预算、分类预算、周期账单及本地通知提醒。
 - 四套离线官方主题：清透薄荷、雾海蓝、暖杏、暮山紫；每套支持跟随系统、白天和黑夜模式，自定义图片与遮罩仍保留。
 - 页面方向过渡、主题换色和折叠动效，可在外观设置关闭，并遵循系统动画设置。
 - 可选系统生物识别或锁屏凭据验证；ZIP 完整备份与旧 JSON 恢复、筛选后导出 UTF-8 BOM CSV。
+
+1.1.19 更新：统计页新增“月总账单 / 年总账单”入口。账单按完整自然月或自然年汇总，支持前后周期切换、回到当前周期，并展示总收入、总支出、结余、账目笔数、收入与支出分类汇总，以及可点开编辑的全部流水。
 
 1.1.18 更新：A+「活页账本」原生界面、月份账页、收支分栏、20格预算刻度、顶部快速记账与滑动书签导航；新图标采用「账页与书签」。页面过渡为28dp/260ms，底栏书签220ms，可关闭动效；草稿、系统返回、图表手势与原有数据关联继续保留。修正同日切换时区后的近期账单刷新及RTL书签位置。
 
@@ -74,7 +77,7 @@ docs/              # 版本、验证与安装说明
 ```bash
 git clone https://github.com/ggbo13/liuji-ledger.git
 cd liuji-ledger
-git switch --detach v1.1.18
+git switch --detach v1.1.19
 
 # macOS / Linux
 ./gradlew :app:assembleDebug
@@ -92,7 +95,7 @@ Windows PowerShell 使用：
 
 Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。Debug 默认签名与正式发布包不同，不能直接覆盖正式版；不要为安装 Debug 包而卸载日常使用的正式版。
 
-1.1.18 对应源码以 `v1.1.18` 标签为准，开发改动见 [PR #3](https://github.com/ggbo13/liuji-ledger/pull/3)，依赖1.1.17的 [PR #2](https://github.com/ggbo13/liuji-ledger/pull/2)。PR 不自动合并，默认分支的发布文档更新不等于已合并应用源码。
+1.1.19 对应源码以 `v1.1.19` 标签为准。发布前建议导出完整备份；覆盖安装须继续使用原签名，不要卸载旧版。开发改动见 [PR #3](https://github.com/ggbo13/liuji-ledger/pull/3)，依赖1.1.17的 [PR #2](https://github.com/ggbo13/liuji-ledger/pull/2)。PR 不自动合并，默认分支的发布文档更新不等于已合并应用源码。
 
 在独立测试设备或模拟器上运行仪器测试：
 
@@ -112,6 +115,10 @@ Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。Debug 默认签�
 然后运行 `./gradlew :app:assembleRelease`；Windows 使用 `.\gradlew.bat :app:assembleRelease`。自有签名生成的包不能覆盖本项目 Releases 中使用原签名的安装包。不要把密码写入仓库或提交历史。
 
 ## 验证状态
+
+1.1.19 于 2026-11-02 完成 Debug／原签名 Release 构建；两种变体各 115 项单元测试通过，API30、API36 各 205 项数据库及界面测试通过，均为 0 失败、0 错误、0 跳过。新增月总账单／年总账单的 Compose 入口、汇总、分类和点击编辑测试已实际执行；远端两种变体 Lint 均为 0 错误、21 条警告，同机一万笔合成账目性能任务通过。
+
+结果见 [1.1.19 最终检查](https://github.com/ggbo13/liuji-ledger/actions/runs/41380695808) 及 [安装与测试说明](docs/RELEASE_NOTES_1.1.19.md)。本机没有实体 Android 手机，未验证厂商桌面、厂商输入法、实体边缘返回和真机覆盖安装。
 
 1.1.18 于2026-10-27完成Debug／原签名Release构建；两种变体各114项单元测试通过，API30、API36各203项数据库及界面测试通过，均为0失败、0错误、0跳过。包含真实软键盘的程序聚焦与触摸聚焦、首页12组小屏／大字／明暗布局，以及48组官方主题选择器矩阵。远端两种变体Lint均为0错误、21条警告，本地为0错误、8条警告。
 
