@@ -1,7 +1,9 @@
 package com.liujii.ledger
 
 import com.liujii.ledger.data.MoneyType
+import com.liujii.ledger.data.StatementScope
 import com.liujii.ledger.data.TransactionRow
+import com.liujii.ledger.data.statementDateRange
 import com.liujii.ledger.data.statisticsChartSeries
 import com.liujii.ledger.data.statisticsSummary
 import java.time.LocalDate
@@ -78,5 +80,13 @@ class StatisticsSummary115Test {
             occurredAt = java.time.Instant.parse("2026-09-30T20:00:00Z").toEpochMilli())
         assertEquals(100L, statisticsSummary(listOf(entry), start, start, zone).incomeCents)
         assertEquals(0L, statisticsSummary(listOf(entry), start, start, ZoneId.of("UTC")).incomeCents)
+    }
+
+    @Test fun statementRangesCoverFullCalendarMonthAndYear() {
+        val leapDay = LocalDate.of(2028, 2, 12)
+        assertEquals(LocalDate.of(2028, 2, 1), statementDateRange(StatementScope.MONTH, leapDay).start)
+        assertEquals(LocalDate.of(2028, 2, 29), statementDateRange(StatementScope.MONTH, leapDay).end)
+        assertEquals(LocalDate.of(2028, 1, 1), statementDateRange(StatementScope.YEAR, leapDay).start)
+        assertEquals(LocalDate.of(2028, 12, 31), statementDateRange(StatementScope.YEAR, leapDay).end)
     }
 }
